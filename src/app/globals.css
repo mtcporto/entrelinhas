@@ -224,17 +224,24 @@ a { color: inherit; text-decoration: none; }
 .reader-topbar > span { color: #83907e; font-size: 9px; font-weight: 700; letter-spacing: .15em; }
 .reader-controls { justify-self: end; display: flex; align-items: center; gap: 10px; color: #667465; font-size: 11px; }
 .reader-controls button { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid #dfe2d7; border-radius: 50%; background: transparent; color: var(--green); cursor: pointer; }
-.reader-book { width: min(100% - 36px, 760px); margin: 0 auto; padding: 86px 0 90px; color: #27342b; }
+.reader-book { width: min(100% - 64px, 1160px); margin: 0 auto; padding: 54px 0 70px; color: #27342b; }
 .reader-title { margin-bottom: 72px; text-align: center; }
 .reader-title .eyebrow { color: #74846f; }
 .reader-title h1 { margin: 18px 0 11px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(38px, 7vw, 64px); font-weight: 500; line-height: 1.08; }
 .reader-title p { color: #768175; font-family: Georgia, serif; font-size: 16px; }
 .reader-rule { display: block; width: 46px; height: 2px; margin: 29px auto 0; background: #8d9b77; }
-.reader-content { font-family: Georgia, "Times New Roman", serif; font-size: var(--reader-font-size); line-height: 1.9; }
-.reader-chapter { margin: 0 0 54px; }
+.reader-page-meta { display: flex; justify-content: space-between; max-width: 1040px; margin: 0 auto 24px; color: #87917f; font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+.reader-content { max-width: 1040px; min-height: 55vh; margin: 0 auto; font-family: Georgia, "Times New Roman", serif; font-size: var(--reader-font-size); line-height: 1.85; }
+.reader-chapter { margin: 0 0 32px; }
 .reader-chapter h2 { margin: 0 0 25px; color: #304b38; font-size: 1.15em; font-weight: 500; letter-spacing: .08em; text-align: center; text-transform: uppercase; }
-.reader-chapter p { margin: 0 0 1.1em; text-indent: 1.5em; }
+.reader-chapter p { margin: 0 0 1.1em; text-align: justify; text-indent: 1.5em; hyphens: auto; }
 .reader-chapter p:first-of-type { text-indent: 0; }
+.reader-pagination { display: flex; align-items: center; justify-content: space-between; gap: 14px; max-width: 1040px; margin: 34px auto 0; padding: 14px 0; border-top: 1px solid #d8ddd1; border-bottom: 1px solid #d8ddd1; color: #637160; }
+.reader-pagination button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 10px; border: 0; background: transparent; color: #315d46; cursor: pointer; font: inherit; }
+.reader-pagination button:disabled { opacity: .35; cursor: default; }
+.reader-pagination label { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.reader-pagination select { max-width: 170px; padding: 7px 9px; border: 1px solid #dfe2d7; border-radius: 5px; background: transparent; color: #354638; }
+.reader-page-number { font-size: 11px; white-space: nowrap; }
 .reader-credit { margin-top: 80px; padding: 27px 0 0; border-top: 1px solid #d8ddd1; color: #738071; font-size: 12px; line-height: 1.7; }
 .reader-credit strong { color: #435847; }
 .reader-credit div { display: flex; gap: 20px; flex-wrap: wrap; margin: 14px 0; }
@@ -256,9 +263,15 @@ a { color: inherit; text-decoration: none; }
     .related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 14px; }
     .reader-topbar { grid-template-columns: 1fr auto; padding: 0 14px; }
     .reader-topbar > span { display: none; }
-    .reader-book { width: calc(100% - 38px); padding-top: 58px; }
+    .reader-book { width: calc(100% - 32px); padding-top: 40px; }
     .reader-title { margin-bottom: 50px; }
-    .reader-content { line-height: 1.8; }
+    .reader-content { min-height: 52vh; line-height: 1.8; }
+    .reader-page-meta { margin-bottom: 17px; font-size: 9px; }
+    .reader-pagination { gap: 4px; margin-top: 24px; }
+    .reader-pagination button { gap: 4px; padding: 7px 5px; font-size: 12px; }
+    .reader-pagination label { gap: 4px; }
+    .reader-pagination select { max-width: 115px; }
+    .reader-page-number { display: none; }
 }
 
 @media (max-width: 960px) {
