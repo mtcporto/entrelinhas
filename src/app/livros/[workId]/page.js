@@ -1,0 +1,96 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ArrowLeft, ArrowUpRight, BookOpen } from "lucide-react";
+import BookCover from "@/components/book-cover";
+import RelatedBooks from "@/components/related-books";
+import { getOpenLibraryJson, searchAuthorWorks, searchWorkRecord } from "@/lib/books";
+
+const PUBLIC_DOMAIN_WORK = "OL1003017W";
+
+function descriptionText(description) {
+    const value = typeof description === "string" ? description : description?.value;
+    return typeof value === "string" ? value.replace(/\*\*/g, "").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") : "";
+}
+
+function authorIdFromKey(key = "") {
+    const match = key.match(/\/authors\/(OL\d+A)/);
+    return match?.[1] || null;
+}
+
+async function loadWork(workId) {
+    if (!/^OL\d+W$/.test(workId)) return null;
+    try {
+        const [work, bibliographicRecord] = await Promise.all([
+            getOpenLibraryJson(`/works/${workId}`),
+            searchWorkRecord(workId).catch(() => null),
+        ]);
+        const authorIds = [...new Set((work.authors || []).map((item) => authorIdFromKey(item.author?.key)).filter(Boolean))];
+        const [authorProfiles, authorWorks] = await Promise.all([
+            Promise.all(authorIds.slice(0, 2).map(async (authorId) => {
+                try { return await getOpenLibraryJson(`/authors/${authorId}`); }
+                catch { return null; }
+            })),
+            Promise.all(authorIds.slice(0, 2).map(async (authorId) => {
+            try { return await searchAuthorWorks(authorId, 100); }
+            catch { return []; }
+            })),
+        ]);
+        const related = authorWorks.flatMap((result) => result)
+            .filter((book) => book.key !== `/works/${workId}`)
+            .filter((book, index, all) => all.findIndex((candidate) => candidate.key === book.key) === index)
+            .slice(0, 8)
+            .map((book) => ({
+                id: book.key?.split("/").pop(),
+                title: book.title || "Obra sem título",
+                year: book.first_publish_year || "",
+                coverUrl: book.cover_i > 0 ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : null,
+            }));
+        return { work, bibliographicRecord, authorIds, authorProfiles, related };
+    } catch (error) {
+        if (error.status === 404) return null;
+        console.error("Could not load book details:", error);
+        return { unavailable: true };
+    }
+}
+
+export async function generateMetadata({ params }) {
+    const { workId } = await params;
+    const data = await loadWork(workId);
+    if (!data?.work) return { title: "Obra não encontrada | Entrelinhas" };
+    return { title: `${data.work.title} | Entrelinhas`, description: descriptionText(data.work.description).slice(0, 155) || `Conheça ${data.work.title} e seu autor no Entrelinhas.` };
+}
+
+export default async function BookDetailPage({ params }) {
+    const { workId } = await params;
+    const data = await loadWork(workId);
+    if (!data) notFound();
+
+    if (data.unavailable) return <main className="detail-shell"><p>Não foi possível carregar esta obra agora.</p><Link href="/">Voltar ao catálogo</Link></main>;
+    const { work, bibliographicRecord, authorIds, authorProfiles, related } = data;
+    const authorNames = authorProfiles.map((author) => author?.name).filter(Boolean);
+    const primaryAuthorId = authorIds[0];
+    const coverId = work.covers?.find((id) => id > 0) || bibliographicRecord?.cover_i;
+    const coverUrl = coverId ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg` : null;
+    const description = descriptionText(work.description);
+    const isPublicDomainDigital = workId === PUBLIC_DOMAIN_WORK;
+
+    return <main className="detail-shell">
+        <header className="detail-topbar"><Link className="detail-back" href="/"><ArrowLeft size={16} /> Voltar ao catálogo</Link><Link className="brand" href="/"><span className="brand-mark"><BookOpen size={20} /></span><span>entrelinhas<span className="brand-period">.</span></span></Link></header>
+        <section className="work-hero">
+            <BookCover src={coverUrl} title={work.title} loading="eager" />
+            <div className="work-copy"><span className="eyebrow">DETALHES DA OBRA</span><h1>{work.title}</h1>
+                {authorNames.map((name, index) => primaryAuthorId ? <Link className="work-author" href={`/autores/${primaryAuthorId}`} key={`${name}-${index}`}>{name}</Link> : <span className="work-author" key={`${name}-${index}`}>{name}</span>)}
+                <div className="work-facts">{(work.first_publish_date || bibliographicRecord?.first_publish_year) && <div><span>Primeira publicação</span><strong>{work.first_publish_date || bibliographicRecord?.first_publish_year}</strong></div>}{bibliographicRecord?.number_of_pages_median && <div><span>Mediana de páginas</span><strong>{bibliographicRecord.number_of_pages_median}</strong></div>}{bibliographicRecord?.edition_count && <div><span>Edições registradas</span><strong>{bibliographicRecord.edition_count}</strong></div>}</div>
+                {isPublicDomainDigital && <Link className="primary-button read-book-button" href={`/livros/${workId}/ler`}>Ler o livro no Entrelinhas <ArrowUpRight size={16} /></Link>}
+                <a className="detail-source-link" href={`https://openlibrary.org/works/${workId}`} target="_blank" rel="noreferrer">Ficha bibliográfica Open Library <ArrowUpRight size={14} /></a>
+            </div>
+        </section>
+        <section className="editorial-section"><span className="eyebrow">POR QUE ESTA OBRA IMPORTA</span>
+            {workId === PUBLIC_DOMAIN_WORK ? <><h2>Um narrador que escreve depois do fim.</h2><p>Brás Cubas conta suas memórias do além e interrompe a narrativa para conversar com o leitor. A forma fragmentada, a ironia e a crítica às hierarquias sociais fizeram do romance uma ruptura na ficção de Machado de Assis.</p><p>A obra saiu primeiro em folhetim, em 1880, e chegou em livro no ano seguinte. O projeto acadêmico Machado de Assis Digital Corpus destaca a mudança radical de estilo e temas como escravidão, posição social e papel das mulheres.</p><div className="editorial-sources"><a href="https://machado.byu.edu/text/memorias-postumas-de-bras-cubas/" target="_blank" rel="noreferrer">Machado de Assis Digital Corpus <ArrowUpRight size={13} /></a><a href="https://digital.bbm.usp.br/handle/bbm/4826" target="_blank" rel="noreferrer">Edição de 1881 na Brasiliana USP <ArrowUpRight size={13} /></a></div></>
+                : description ? <><p>{description}</p><p className="source-caption">Descrição bibliográfica: <a href={`https://openlibrary.org/works/${workId}`} target="_blank" rel="noreferrer">Open Library</a>.</p></> : <p>Explore os dados bibliográficos e conheça outras obras relacionadas a este título.</p>}
+        </section>
+        {primaryAuthorId && <p className="author-profile-cta">Conheça a trajetória e outras obras de <Link href={`/autores/${primaryAuthorId}`}>{authorNames[0] || "este autor"}</Link>.</p>}
+        <RelatedBooks books={related} heading={primaryAuthorId ? `Mais de ${authorNames[0] || "este autor"}` : "Obras relacionadas"} />
+        <footer className="detail-footer">Dados bibliográficos do <a href="https://openlibrary.org" target="_blank" rel="noreferrer">Open Library</a>.</footer>
+    </main>;
+}

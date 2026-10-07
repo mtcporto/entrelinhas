@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import {
     ArrowDownWideNarrow,
@@ -58,15 +59,25 @@ function bookMatchesTitle(book, list) {
     return list.some((work) => title.includes(work.toLocaleLowerCase("pt-BR")));
 }
 
+function bookHref(book) {
+    const match = book.id?.match(/(?:\/works\/)?(OL\d+W)$/);
+    return match ? `/livros/${match[1]}` : book.infoUrl || "#";
+}
+
+function authorHref(book) {
+    const key = book.authorKeys?.[0];
+    return /^OL\d+A$/.test(key || "") ? `/autores/${key}` : null;
+}
+
 function BookCover({ book, large = false }) {
     if (book.coverUrl) {
         return (
             // Open Library serves cover images separately from its search API.
             <Image
                 fill
-                sizes={large ? "(max-width: 680px) 155px, 245px" : "(max-width: 680px) 50vw, 25vw"}
+                sizes="(max-width: 680px) 50vw, 25vw"
                 unoptimized
-                className={large ? "book-cover book-cover-large" : "book-cover"}
+                className="book-cover"
                 src={book.coverUrl}
                 alt={`Capa de ${book.title}`}
                 loading="lazy"
@@ -104,7 +115,6 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
     const [view, setView] = useState("discover");
     const [search, setSearch] = useState("");
     const [queryOverride, setQueryOverride] = useState("");
-    const [selectedBook, setSelectedBook] = useState(null);
     const [loading, setLoading] = useState(initialBooks.length === 0);
     const [error, setError] = useState("");
     const [accountState, setAccountState] = useState("loading");
@@ -260,6 +270,7 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
                 id: item.key || `${item.title}-${(item.author_name || []).join(",")}`,
                 title: item.title || "Título não informado",
                 authors: item.author_name || [],
+                authorKeys: item.author_key || [],
                 firstPublished: item.first_publish_year || null,
                 pageCount: item.number_of_pages_median || null,
                 editions: item.edition_count || 0,
@@ -395,13 +406,13 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
                                 const suggested = bookMatchesTitle(book, suggestedReading);
                                 const movement = movementFor(book);
                                 return <article className="book-card" key={book.id}>
-                                    <button className="cover-button" onClick={() => setSelectedBook(book)} aria-label={`Ver detalhes de ${book.title}`}>
+                                    <Link className="cover-button" href={bookHref(book)} aria-label={`Ver detalhes de ${book.title}`}>
                                         <div className="cover-frame"><BookCover book={book} />{(required || suggested) && <span className={required ? "book-badge required" : "book-badge suggested"}>{required ? "Obrigatória" : "Sugestão"}</span>}</div>
-                                    </button>
+                                    </Link>
                                     <div className="book-info">
                                         <div className="book-meta">{movement || "Literatura brasileira"}{book.firstPublished ? ` · ${book.firstPublished}` : ""}</div>
-                                        <button className="book-title" onClick={() => setSelectedBook(book)}>{book.title}</button>
-                                        <p className="book-author">{book.authors.slice(0, 2).join(", ") || "Autoria não informada"}</p>
+                                        <Link className="book-title-link" href={bookHref(book)}>{book.title}</Link>
+                                        <p className="book-author">{authorHref(book) ? <Link className="book-author-link" href={authorHref(book)}>{book.authors.slice(0, 2).join(", ")}</Link> : book.authors.slice(0, 2).join(", ") || "Autoria n\u00e3o informada"}</p>
                                         <div className="book-card-bottom"><span>{book.pageCount ? `${book.pageCount} páginas` : `${book.editions} edições`}</span><button className={saved ? "save-button saved" : "save-button"} onClick={() => toggleSaved(book)} aria-label={saved ? `Remover ${book.title} da lista` : `Salvar ${book.title}`} aria-pressed={saved}>{saved ? <Heart size={17} fill="currentColor" /> : <Bookmark size={17} />}</button></div>
                                     </div>
                                 </article>;
@@ -409,18 +420,6 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
             </section>
 
             <footer className="site-footer"><a className="brand footer-brand" href="#inicio"><span className="brand-mark"><BookOpen size={18} /></span><span>entrelinhas<span className="brand-period">.</span></span></a><span>Literatura brasileira, para ler e guardar.</span><a href="https://openlibrary.org" target="_blank" rel="noreferrer">Dados do Open Library <ArrowUpRight size={14} /></a></footer>
-
-            {selectedBook && <div className="modal-backdrop" onClick={() => setSelectedBook(null)} role="presentation">
-                <section className="book-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" onClick={(event) => event.stopPropagation()}>
-                    <button className="modal-close" onClick={() => setSelectedBook(null)} aria-label="Fechar"><X size={20} /></button>
-                    <div className="modal-cover"><BookCover book={selectedBook} large /></div>
-                    <div className="modal-copy"><span className="eyebrow">DETALHES DA OBRA</span><h2 id="modal-title">{selectedBook.title}</h2><p className="modal-author">{selectedBook.authors.join(", ") || "Autoria não informada"}</p>
-                        <div className="modal-facts"><div><span>Primeira edição</span><strong>{selectedBook.firstPublished || "Não informado"}</strong></div><div><span>Páginas</span><strong>{selectedBook.pageCount || "Não informado"}</strong></div><div><span>Edições registradas</span><strong>{selectedBook.editions || "Não informado"}</strong></div></div>
-                        {selectedBook.infoUrl && <a className="primary-button modal-link" href={selectedBook.infoUrl} target="_blank" rel="noreferrer">Ver no Open Library <ArrowUpRight size={16} /></a>}
-                        <button className="secondary-button" onClick={() => toggleSaved(selectedBook)}>{savedBooks.some((item) => item.id === selectedBook.id) ? <Heart size={16} fill="currentColor" /> : <Bookmark size={16} />}{savedBooks.some((item) => item.id === selectedBook.id) ? "Remover da minha lista" : "Adicionar à minha lista"}</button>
-                    </div>
-                </section>
-            </div>}
 
             {accountDialog && <div className="modal-backdrop" onClick={() => setAccountDialog("")} role="presentation"><section className="account-modal" role="dialog" aria-modal="true" aria-labelledby="account-title" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setAccountDialog("")} aria-label="Fechar"><X size={20} /></button><span className="eyebrow">SUAS LEITURAS EM QUALQUER LUGAR</span><h2 id="account-title">{accountDialog === "signup" ? "Crie sua conta" : "Bem-vindo de volta"}</h2><p>Suas listas ficam salvas com segurança e sincronizadas entre dispositivos.</p><form className="account-form" onSubmit={submitAccount}>{accountDialog === "signup" && <label>Nome<input name="name" autoComplete="name" required maxLength={120} /></label>}<label>E-mail<input name="email" type="email" autoComplete="email" required /></label><label>Senha<input name="password" type="password" autoComplete={accountDialog === "signup" ? "new-password" : "current-password"} minLength={8} required /></label>{accountMessage && <p className="account-error" role="alert">{accountMessage}</p>}<button className="primary-button" disabled={accountBusy}>{accountBusy ? "Aguarde..." : accountDialog === "signup" ? "Criar conta" : "Entrar"}</button></form>{googleEnabled && <><div className="auth-divider">ou</div><button className="secondary-button google-button" disabled={accountBusy} onClick={signInWithGoogle}>Continuar com Google</button></>}{accountDialog === "signin" ? <button className="auth-switch" onClick={() => { setAccountMessage(""); setAccountDialog("signup"); }}>Ainda não tem conta? Criar agora</button> : <button className="auth-switch" onClick={() => { setAccountMessage(""); setAccountDialog("signin"); }}>Já tem uma conta? Entrar</button>}</section></div>}
         </main>
