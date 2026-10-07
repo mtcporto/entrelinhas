@@ -22,6 +22,7 @@ export async function POST(request) {
         `CREATE TABLE IF NOT EXISTS reading_lists (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
         `CREATE INDEX IF NOT EXISTS reading_lists_user_id_index ON reading_lists(user_id)`,
         `CREATE TABLE IF NOT EXISTS reading_list_books (list_id TEXT NOT NULL, book_id TEXT NOT NULL, book_data TEXT NOT NULL, created_at INTEGER NOT NULL, UNIQUE(list_id, book_id))`,
+        `CREATE TABLE IF NOT EXISTS author_biography_translations (author_id TEXT PRIMARY KEY, source_hash TEXT NOT NULL, source_text TEXT NOT NULL, translated_text TEXT NOT NULL, model TEXT NOT NULL, updated_at INTEGER NOT NULL)`,
     ];
     try {
         await getDb().batch(statements.map((sql) => ({ sql })), "write");

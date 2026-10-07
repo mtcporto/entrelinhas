@@ -217,6 +217,7 @@ a { color: inherit; text-decoration: none; }
 .author-portrait-placeholder { display: flex; flex-direction: column; gap: 12px; color: #71856d; font-size: 10px; letter-spacing: .12em; }
 .author-dates { color: #758174; font-size: 13px; }
 .author-bio { max-width: 650px; margin: 25px 0; }
+.bio-translation-note { margin-top: -14px; color: #87917f; font-size: 11px; line-height: 1.6; }
 .author-works-section { border-top: 1px solid var(--line); }
 
 .reader-shell { min-height: 100vh; background: #f5f3eb; }
