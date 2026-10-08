@@ -4,3 +4,7 @@ node_modules/
 .env*
 !.env.example
 npm-debug.log*
+
+.env.example
+
+.env.local

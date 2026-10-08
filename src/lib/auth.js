@@ -5,6 +5,12 @@ import { getDb } from "@/lib/db";
 import { authSchema } from "@/lib/auth-schema";
 
 let authInstance;
+const ADMIN_EMAIL = "mtcporto@gmail.com";
+
+function roleForUser(user) {
+    return user.email?.trim().toLowerCase() === ADMIN_EMAIL && user.emailVerified === true ? "admin" : "user";
+}
+
 export function getAuth() {
     if (!authInstance) {
         const secret = process.env.BETTER_AUTH_SECRET;
@@ -21,6 +27,41 @@ export function getAuth() {
             basePath: "/api/auth",
             trustedOrigins: [baseURL, "http://localhost:3000"],
             emailAndPassword: { enabled: true, minPasswordLength: 8 },
+            user: {
+                additionalFields: {
+                    role: {
+                        type: ["user", "admin"],
+                        required: false,
+                        defaultValue: "user",
+                        input: false,
+                    },
+                },
+            },
+            databaseHooks: {
+                user: {
+                    create: {
+                        before: async (user) => ({ data: { ...user, role: roleForUser(user) } }),
+                    },
+                    update: {
+                        before: async (user) => {
+                            const current = await database.execute({
+                                sql: "SELECT email, email_verified FROM user WHERE id = ? LIMIT 1",
+                                args: [user.id],
+                            });
+                            const previous = current.rows[0];
+                            return {
+                                data: {
+                                    ...user,
+                                    role: roleForUser({
+                                        email: user.email ?? previous?.email,
+                                        emailVerified: user.emailVerified ?? Boolean(previous?.email_verified),
+                                    }),
+                                },
+                            };
+                        },
+                    },
+                },
+            },
             socialProviders,
         });
     }

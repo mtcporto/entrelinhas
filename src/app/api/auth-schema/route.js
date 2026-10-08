@@ -12,7 +12,7 @@ export async function POST(request) {
     if (expected.length < 32) return NextResponse.json({ error: "setup_token_too_short" }, { status: 503 });
 
     const statements = [
-        `CREATE TABLE IF NOT EXISTS user (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, email_verified INTEGER NOT NULL DEFAULT 0, image TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
+        `CREATE TABLE IF NOT EXISTS user (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, email_verified INTEGER NOT NULL DEFAULT 0, image TEXT, role TEXT NOT NULL DEFAULT 'user', created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
         `CREATE TABLE IF NOT EXISTS session (id TEXT PRIMARY KEY, expires_at INTEGER NOT NULL, token TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, ip_address TEXT, user_agent TEXT, user_id TEXT NOT NULL)`,
         `CREATE INDEX IF NOT EXISTS session_user_id_index ON session(user_id)`,
         `CREATE TABLE IF NOT EXISTS account (id TEXT PRIMARY KEY, account_id TEXT NOT NULL, provider_id TEXT NOT NULL, user_id TEXT NOT NULL, access_token TEXT, refresh_token TEXT, id_token TEXT, access_token_expires_at INTEGER, refresh_token_expires_at INTEGER, scope TEXT, password TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, issuer TEXT NOT NULL DEFAULT '', UNIQUE(issuer, account_id))`,
@@ -25,7 +25,12 @@ export async function POST(request) {
         `CREATE TABLE IF NOT EXISTS author_biography_translations (author_id TEXT PRIMARY KEY, source_hash TEXT NOT NULL, source_text TEXT NOT NULL, translated_text TEXT NOT NULL, model TEXT NOT NULL, updated_at INTEGER NOT NULL)`,
     ];
     try {
-        await getDb().batch(statements.map((sql) => ({ sql })), "write");
+        const db = getDb();
+        await db.batch(statements.map((sql) => ({ sql })), "write");
+        const userColumns = await db.execute("PRAGMA table_info(user)");
+        if (!userColumns.rows.some((column) => column.name === "role")) {
+            await db.execute("ALTER TABLE user ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+        }
         return NextResponse.json({ ok: true });
     } catch (error) {
         console.error("Schema setup failed:", error);
