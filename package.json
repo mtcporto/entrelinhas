@@ -7,7 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed:editorial": "node scripts/seed-editorial-content.mjs"
+    "seed:editorial": "node scripts/seed-editorial-content.mjs",
+    "cover:set": "node scripts/set-cover-url.mjs",
+    "cover:list": "node scripts/list-cover-urls.mjs"
   },
   "repository": {
     "type": "git",

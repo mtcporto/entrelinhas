@@ -29,6 +29,7 @@ export const readerBooks = {
         author: "Machado de Assis",
         authorDeathYear: 1908,
         year: "1891",
+        coverUrl: "/covers/quincas-borba.webp",
         textFile: "/texts/quincas-borba.txt",
         gutenbergId: "55682",
         sourceUrl: "https://www.gutenberg.org/ebooks/55682",

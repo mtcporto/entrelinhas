@@ -22,7 +22,7 @@ export async function POST(request) {
         `CREATE TABLE IF NOT EXISTS reading_lists (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
         `CREATE INDEX IF NOT EXISTS reading_lists_user_id_index ON reading_lists(user_id)`,
         `CREATE TABLE IF NOT EXISTS reading_list_books (list_id TEXT NOT NULL, book_id TEXT NOT NULL, book_data TEXT NOT NULL, created_at INTEGER NOT NULL, UNIQUE(list_id, book_id))`,
-        `CREATE TABLE IF NOT EXISTS editorial_profiles (entity_type TEXT NOT NULL CHECK(entity_type IN ('author', 'work')), entity_id TEXT NOT NULL, title TEXT NOT NULL, summary TEXT NOT NULL, editorial TEXT NOT NULL, themes_json TEXT NOT NULL DEFAULT '[]', updated_at INTEGER NOT NULL, PRIMARY KEY(entity_type, entity_id))`,
+        `CREATE TABLE IF NOT EXISTS editorial_profiles (entity_type TEXT NOT NULL CHECK(entity_type IN ('author', 'work')), entity_id TEXT NOT NULL, title TEXT NOT NULL, summary TEXT NOT NULL, editorial TEXT NOT NULL, themes_json TEXT NOT NULL DEFAULT '[]', cover_url TEXT, updated_at INTEGER NOT NULL, PRIMARY KEY(entity_type, entity_id))`,
         `CREATE TABLE IF NOT EXISTS editorial_sources (entity_type TEXT NOT NULL, entity_id TEXT NOT NULL, label TEXT NOT NULL, url TEXT NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(entity_type, entity_id, url))`,
         `CREATE INDEX IF NOT EXISTS editorial_sources_entity_index ON editorial_sources(entity_type, entity_id)`,
     ];
@@ -32,6 +32,10 @@ export async function POST(request) {
         const userColumns = await db.execute("PRAGMA table_info(user)");
         if (!userColumns.rows.some((column) => column.name === "role")) {
             await db.execute("ALTER TABLE user ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+        }
+        const editorialColumns = await db.execute("PRAGMA table_info(editorial_profiles)");
+        if (!editorialColumns.rows.some((column) => column.name === "cover_url")) {
+            await db.execute("ALTER TABLE editorial_profiles ADD COLUMN cover_url TEXT");
         }
         return NextResponse.json({ ok: true });
     } catch (error) {

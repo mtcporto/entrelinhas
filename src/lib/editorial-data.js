@@ -13,7 +13,7 @@ export const getEditorialProfile = cache(async (entityType, entityId) => {
     const fallback = seedById.get(`${entityType}:${entityId}`) || null;
     try {
         const result = await getDb().execute({
-            sql: "SELECT title, summary, editorial, themes_json FROM editorial_profiles WHERE entity_type = ? AND entity_id = ? LIMIT 1",
+            sql: "SELECT title, summary, editorial, themes_json, cover_url FROM editorial_profiles WHERE entity_type = ? AND entity_id = ? LIMIT 1",
             args: [entityType, entityId],
         });
         const row = result.rows[0];
@@ -24,7 +24,7 @@ export const getEditorialProfile = cache(async (entityType, entityId) => {
         });
         return {
             entityType, entityId, title: row.title, summary: row.summary,
-            editorial: row.editorial, themes: parseJson(row.themes_json, []),
+            editorial: row.editorial, themes: parseJson(row.themes_json, []), coverUrl: row.cover_url || null,
             sources: sources.rows.map(({ label, url }) => ({ label, url })),
         };
     } catch (error) {

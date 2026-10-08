@@ -9,10 +9,14 @@ if (!url || !authToken) throw new Error("TURSO_DATABASE_URL and TURSO_AUTH_TOKEN
 
 const db = createClient({ url, authToken });
 const statements = [
-    { sql: `CREATE TABLE IF NOT EXISTS editorial_profiles (entity_type TEXT NOT NULL CHECK(entity_type IN ('author', 'work')), entity_id TEXT NOT NULL, title TEXT NOT NULL, summary TEXT NOT NULL, editorial TEXT NOT NULL, themes_json TEXT NOT NULL DEFAULT '[]', updated_at INTEGER NOT NULL, PRIMARY KEY(entity_type, entity_id))` },
+    { sql: `CREATE TABLE IF NOT EXISTS editorial_profiles (entity_type TEXT NOT NULL CHECK(entity_type IN ('author', 'work')), entity_id TEXT NOT NULL, title TEXT NOT NULL, summary TEXT NOT NULL, editorial TEXT NOT NULL, themes_json TEXT NOT NULL DEFAULT '[]', cover_url TEXT, updated_at INTEGER NOT NULL, PRIMARY KEY(entity_type, entity_id))` },
     { sql: `CREATE TABLE IF NOT EXISTS editorial_sources (entity_type TEXT NOT NULL, entity_id TEXT NOT NULL, label TEXT NOT NULL, url TEXT NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(entity_type, entity_id, url))` },
     { sql: "CREATE INDEX IF NOT EXISTS editorial_sources_entity_index ON editorial_sources(entity_type, entity_id)" },
 ];
+const editorialColumns = await db.execute("PRAGMA table_info(editorial_profiles)");
+if (!editorialColumns.rows.some((column) => column.name === "cover_url")) {
+    statements.push({ sql: "ALTER TABLE editorial_profiles ADD COLUMN cover_url TEXT" });
+}
 
 const now = Date.now();
 for (const profile of editorialSeedProfiles) {

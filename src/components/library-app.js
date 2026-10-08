@@ -69,7 +69,7 @@ function BookCover({ book, large = false }) {
     );
 }
 export default function LibraryApp({ googleEnabled = false }) {
-    const [books] = useState(readerBookCards);
+    const [books, setBooks] = useState(readerBookCards);
     const [savedBooks, setSavedBooks] = useState([]);
     const [view, setView] = useState("discover");
     const [search, setSearch] = useState("");
@@ -80,6 +80,22 @@ export default function LibraryApp({ googleEnabled = false }) {
     const [accountDialog, setAccountDialog] = useState("");
     const [accountMessage, setAccountMessage] = useState("");
     const [accountBusy, setAccountBusy] = useState(false);
+    useEffect(() => {
+        const controller = new AbortController();
+        fetch("/api/editorial-covers", { signal: controller.signal })
+            .then((response) => response.ok ? response.json() : null)
+            .then((covers) => {
+                if (!covers || typeof covers !== "object") return;
+                setBooks((current) => current.map((book) => {
+                    const workId = book.id?.split("/").pop();
+                    return covers[workId] ? { ...book, coverUrl: covers[workId] } : book;
+                }));
+            })
+            .catch((error) => {
+                if (error.name !== "AbortError") console.error("Could not load custom book covers:", error);
+            });
+        return () => controller.abort();
+    }, []);
     useEffect(() => {
         void loadAccount();
     }, []);

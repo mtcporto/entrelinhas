@@ -1,0 +1,13 @@
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
+  "name": "entrelinhas-assets",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-08",
+  "workers_dev": true,
+  "r2_buckets": [
+    {
+      "binding": "COVERS",
+      "bucket_name": "entrelinhas-images"
+    }
+  ]
+}
