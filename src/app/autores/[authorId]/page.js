@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, BookOpen } from "lucide-react";
 import BookCover from "@/components/book-cover";
 import { getOpenLibraryJson, searchAuthorProfile } from "@/lib/books";
@@ -9,6 +9,11 @@ import { getEditorialProfile } from "@/lib/editorial-data";
 function slugify(value = "") {
     return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
+
+const authorSlugAliases = {
+    "azevedo-aluizio": "aluisio-azevedo",
+    "azevedo-aluisio": "aluisio-azevedo",
+};
 
 async function loadAuthor(authorId) {
     let author = null;
@@ -34,7 +39,7 @@ async function loadAuthor(authorId) {
 
 export async function generateMetadata({ params }) {
     const { authorId } = await params;
-    const data = await loadAuthor(authorId);
+    const data = await loadAuthor(authorSlugAliases[authorId] || authorId);
     return {
         title: data?.author ? `${data.author.name} | Entrelinhas` : "Autor não encontrado | Entrelinhas",
         description: data?.editorial?.summary || (data?.author ? `Biografia e obras de ${data.author.name}.` : undefined),
@@ -43,6 +48,7 @@ export async function generateMetadata({ params }) {
 
 export default async function AuthorPage({ params }) {
     const { authorId } = await params;
+    if (authorSlugAliases[authorId]) permanentRedirect(`/autores/${authorSlugAliases[authorId]}`);
     const data = await loadAuthor(authorId);
     if (!data) notFound();
 
