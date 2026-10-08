@@ -86,17 +86,17 @@ export default async function BookDetailPage({ params }) {
     return <main className="detail-shell">
         <header className="detail-topbar"><Link className="detail-back" href="/"><ArrowLeft size={16} /> Voltar ao catálogo</Link><Link className="brand" href="/"><span className="brand-mark"><BookOpen size={20} /></span><span>entrelinhas<span className="brand-period">.</span></span></Link></header>
         <section className="work-heading"><span className="eyebrow">PERFIL DA OBRA</span><h1>{work.title}</h1>{authorName && <Link className="work-author" href={`/autores/${authorSlug(authorName)}`}>{authorName}</Link>}</section>
+        <section className="work-overview"><BookCover src={coverUrl} title={work.title} loading="eager" /><div className="work-overview-copy">
+            <span className="eyebrow">RESUMO</span><p>{summary}</p>
+            <div className="work-facts"><h3>Informações da edição</h3>{firstPublished && <div><span>Primeira edição</span><strong>{firstPublished}</strong></div>}{bibliographicRecord?.number_of_pages_median && <div><span>Páginas (mediana)</span><strong>{bibliographicRecord.number_of_pages_median}</strong></div>}{bibliographicRecord?.edition_count && <div><span>Edições registradas</span><strong>{bibliographicRecord.edition_count}</strong></div>}</div>
+            {readerBook && <Link className="primary-button read-book-button" href={`/livros/${workId}/ler`}>Ler no Entrelinhas <ArrowUpRight size={16} /></Link>}
+            {readerBook && <a className="detail-source-link" href={readerBook.sourceUrl} target="_blank" rel="noreferrer">Texto original · {sourceLabel} <ArrowUpRight size={14} /></a>}
+        </div></section>
         <section className="editorial-section work-importance"><span className="eyebrow">LEITURA E CONTEXTO</span><h2>Por que esta obra importa</h2>
             {whyItMatters.split(/\n\n+/).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
             {themes.length > 0 && <div className="work-themes"><h3>Temas para observar</h3><ul>{themes.map((theme) => <li key={theme}>{theme}</li>)}</ul></div>}
             {sources.length > 0 && <div className="editorial-sources"><span>Fontes consultadas</span>{sources.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.url}>{source.label} <ArrowUpRight size={13} /></a>)}</div>}
         </section>
-        <section className="work-overview"><BookCover src={coverUrl} title={work.title} loading="eager" /><div className="work-overview-copy">
-            <span className="eyebrow">RESUMO</span><h2>{work.title}</h2><p>{summary}</p>
-            <div className="work-facts"><h3>Informações da edição</h3>{firstPublished && <div><span>Primeira edição</span><strong>{firstPublished}</strong></div>}{bibliographicRecord?.number_of_pages_median && <div><span>Páginas (mediana)</span><strong>{bibliographicRecord.number_of_pages_median}</strong></div>}{bibliographicRecord?.edition_count && <div><span>Edições registradas</span><strong>{bibliographicRecord.edition_count}</strong></div>}</div>
-            {readerBook && <Link className="primary-button read-book-button" href={`/livros/${workId}/ler`}>Ler no Entrelinhas <ArrowUpRight size={16} /></Link>}
-            {readerBook && <a className="detail-source-link" href={readerBook.sourceUrl} target="_blank" rel="noreferrer">Texto original · {sourceLabel} <ArrowUpRight size={14} /></a>}
-        </div></section>
         {authorName && <p className="author-profile-cta">Conheça a trajetória e outras obras de <Link href={`/autores/${authorSlug(authorName)}`}>{authorName}</Link>.</p>}
         <RelatedBooks books={related} heading={authorName ? `Mais de ${authorName}` : "Obras relacionadas"} />
         <footer className="detail-footer">Texto e edição: {readerBook ? <a href={readerBook.sourceUrl} target="_blank" rel="noreferrer">{sourceLabel}</a> : <a href={`https://openlibrary.org/works/${workId}`} target="_blank" rel="noreferrer">Open Library</a>}. O perfil editorial é de autoria do Entrelinhas e mantém as fontes consultadas acima.</footer>
