@@ -22,7 +22,7 @@ const readerBooksByAuthor = Object.values(readerBooks).reduce((authors, book) =>
 }, new Map());
 const readerBookCards = Object.values(readerBooks).map((book) => ({
     id: `/works/${book.workId}`, title: book.title, authors: [book.author], authorKeys: [],
-    firstPublished: Number(book.year) || null, pageCount: null, editions: 0, subjects: [], coverUrl: null, infoUrl: book.sourceUrl,
+    firstPublished: Number(book.year) || null, pageCount: null, editions: 0, subjects: [], coverUrl: book.coverUrl || null, infoUrl: book.sourceUrl,
 }));
 const readerBookCardById = new Map(readerBookCards.map((book) => [book.id, book]));
 function readLocalLists() {

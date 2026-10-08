@@ -75,7 +75,7 @@ export default async function BookDetailPage({ params }) {
     if (!authorNames.length && data.localAuthorName) authorNames.push(data.localAuthorName);
     const authorName = authorNames[0] || readerBook?.author || "";
     const coverId = work.covers?.find((id) => id > 0) || bibliographicRecord?.cover_i;
-    const coverUrl = coverId ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg` : null;
+    const coverUrl = readerBook?.coverUrl || (coverId ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg` : null);
     const whyItMatters = editorial?.editorial || "Esta obra integra o acervo de literatura brasileira do Entrelinhas.";
     const summary = editorial?.summary || descriptionText(work.description) || `Texto de ${authorName} disponível para leitura no Entrelinhas.`;
     const themes = editorial?.themes || [];

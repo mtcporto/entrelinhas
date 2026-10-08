@@ -5,6 +5,7 @@ export const readerBooks = {
         author: "Machado de Assis",
         authorDeathYear: 1908,
         year: "1881",
+        coverUrl: "/covers/memorias-postumas-de-bras-cubas.webp",
         textFile: "/texts/memorias-postumas-de-bras-cubas.txt",
         gutenbergId: "54829",
         sourceUrl: "https://www.gutenberg.org/ebooks/54829",
