@@ -10,7 +10,7 @@ export async function GET() {
         );
         const covers = Object.fromEntries(result.rows.map((row) => [row.entity_id, row.cover_url]));
         return NextResponse.json(covers, {
-            headers: { "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=3600" },
+            headers: { "Cache-Control": "no-store" },
         });
     } catch (error) {
         console.error("Could not load editorial covers:", error);

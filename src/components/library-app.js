@@ -82,7 +82,7 @@ export default function LibraryApp({ googleEnabled = false }) {
     const [accountBusy, setAccountBusy] = useState(false);
     useEffect(() => {
         const controller = new AbortController();
-        fetch("/api/editorial-covers", { signal: controller.signal })
+        fetch("/api/editorial-covers", { cache: "no-store", signal: controller.signal })
             .then((response) => response.ok ? response.json() : null)
             .then((covers) => {
                 if (!covers || typeof covers !== "object") return;
