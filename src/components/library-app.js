@@ -42,7 +42,7 @@ function authorHref(book) {
 }
 
 function bookHref(book) {
-    const match = book.id?.match(/(?:\/works\/)?(OL\d+W|PG\d+)$/);
+    const match = book.id?.match(/(?:\/works\/)?(OL\d+W|PG\d+|WS\d+)$/);
     return match ? `/livros/${match[1]}` : book.infoUrl || "#";
 }
 function BookCover({ book, large = false }) {

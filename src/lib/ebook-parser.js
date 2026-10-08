@@ -1,7 +1,7 @@
-export function parseEbook(raw, allowRomanHeadings = false) {
+export function parseEbook(raw, allowRomanHeadings = false, preserveLineBreaks = false) {
     const lines = raw.replace(/^\uFEFF/, "").replace(/\r/g, "").split("\n");
-    const start = lines.findIndex((line) => /\*\*\*\s*START OF (?:THE|THIS) PROJECT GUTENBERG EBOOK/i.test(line));
-    const end = lines.findIndex((line, index) => index > start && /\*\*\*\s*END OF (?:THE|THIS) PROJECT GUTENBERG EBOOK/i.test(line));
+    const start = lines.findIndex((line) => /\*\*\*\s*START OF (?:(?:THE|THIS) PROJECT GUTENBERG EBOOK|THE ENTRELINHAS TEXT)/i.test(line));
+    const end = lines.findIndex((line, index) => index > start && /\*\*\*\s*END OF (?:(?:THE|THIS) PROJECT GUTENBERG EBOOK|THE ENTRELINHAS TEXT)/i.test(line));
     if (start < 0 || end < 0) throw new Error("Arquivo incompleto");
 
     const sections = [];
@@ -9,7 +9,9 @@ export function parseEbook(raw, allowRomanHeadings = false) {
     let paragraph = [];
     let started = false;
     const flushParagraph = () => {
-        const text = paragraph.join(" ").replace(/\s+/g, " ").trim();
+        const text = preserveLineBreaks
+            ? paragraph.join("\n").replace(/[ \t]+/g, " ").trim()
+            : paragraph.join(" ").replace(/\s+/g, " ").trim();
         if (text) current.paragraphs.push(text);
         paragraph = [];
     };
@@ -22,12 +24,14 @@ export function parseEbook(raw, allowRomanHeadings = false) {
         const line = rawLine.trim();
         if (!line) { flushParagraph(); continue; }
         const normalized = line.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[.:]+$/, "").trim();
-        const isHeading = /^CAPITULO\s+(?:[IVXLCDM]+|\d+|PRIMEIRO|SEGUNDO|TERCEIRO|QUARTO|QUINTO|SEXTO|SETIMO|OITAVO|NONO|DECIMO)$/.test(normalized)
+        const sectionHeading = line.match(/^SECTION:\s*(.+)$/i);
+        const isHeading = Boolean(sectionHeading)
+            || /^CAPITULO\s+(?:[IVXLCDM]+|\d+|PRIMEIRO|SEGUNDO|TERCEIRO|QUARTO|QUINTO|SEXTO|SETIMO|OITAVO|NONO|DECIMO)$/.test(normalized)
             || /^(AO LEITOR|PROLOGO|POSFACIO)$/.test(normalized)
             || (allowRomanHeadings && /^[IVXLCDM]{1,8}$/.test(normalized));
         if (isHeading) {
             flushSection();
-            current = { heading: line, paragraphs: [] };
+            current = { heading: sectionHeading?.[1]?.trim() || line, paragraphs: [] };
             started = true;
         } else if (started) paragraph.push(line);
     }

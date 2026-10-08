@@ -32,8 +32,16 @@ O login por e-mail e senha já está habilitado. Google é opcional e requer `GO
 - Cloudflare pode continuar como DNS/analytics. Não é necessário colocar Worker adicional no caminho de cada busca.
 
 
-## Textos integrais e cat?logo do Gutenberg
+## Textos integrais e fontes
 
-Os textos integrais s?o mantidos como arquivos TXT em `public/texts`, com preserva??o da transcri??o e dos marcadores/cr?ditos da edi??o digital de origem. O cat?logo `src/lib/reader-catalog.js` relaciona cada texto ? obra, autoria, ano de morte, eBook e p?gina da fonte. Para adicionar entradas j? registradas no cat?logo ao acervo local, execute `node scripts/sync-gutenberg-texts.mjs`; o script baixa apenas arquivos ausentes e valida os marcadores do Gutenberg.
+Os textos são mantidos como arquivos TXT UTF-8 em `public/texts`; o catálogo `src/lib/reader-catalog.js` liga cada arquivo à obra, autoria, edição e fonte. O formato simples facilita leitura paginada, busca textual e futura indexação. A atribuição e a licença da transcrição aparecem no leitor.
 
-A sele??o brasileira ? editorial e incremental: o Project Gutenberg n?o mant?m um campo confi?vel de nacionalidade dos autores. Cada inclus?o deve confirmar autoria brasileira, idioma/escopo da obra, elegibilidade em dom?nio p?blico no Brasil e a origem do texto. A declara??o de dom?nio p?blico dos EUA do Gutenberg, isoladamente, n?o comprova o status jur?dico no Brasil.
+O acervo aceita fontes confiáveis com texto integral, incluindo Project Gutenberg e Wikisource. Para entradas do Gutenberg, execute `node scripts/sync-gutenberg-texts.mjs`; o script baixa somente arquivos ausentes e valida os marcadores da edição. Para exportar uma edição da Wikisource como EPUB e extrair seu texto:
+
+```bash
+python scripts/import-wikisource-epub.py 'Eu_(Augusto_dos_Anjos,_1912)' public/texts/eu-augusto-dos-anjos.txt --min-words 10000
+```
+
+O parâmetro `--min-words` é uma barreira simples contra páginas de índice e transcrições claramente parciais; ele não substitui a conferência da edição, dos capítulos e do fim do texto. Registre no catálogo a URL da edição, a edição de referência, a licença da transcrição e os dados do autor. Wikisource pode oferecer transcrição sob licença Creative Commons mesmo quando a obra original está em domínio público; preserve a atribuição e cumpra a licença da transcrição derivada.
+
+A seleção brasileira é editorial e incremental. Confirme autoria brasileira, idioma/escopo, integridade da transcrição e elegibilidade da obra em domínio público no Brasil. A declaração de domínio público dos EUA do Gutenberg, por si só, não comprova o status jurídico brasileiro. Quando a fonte oferecer apenas PDF ou uma transcrição parcial, não a apresente como texto integral.

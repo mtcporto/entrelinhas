@@ -18,7 +18,7 @@ function authorIdFromKey(key = "") {
 }
 
 async function loadWork(workId) {
-    if (/^PG\d+$/.test(workId)) {
+    if (!/^OL\d+W$/.test(workId) && getReaderBook(workId)) {
         const readerBook = getReaderBook(workId);
         if (!readerBook) return null;
         return { work: { title: readerBook.title, first_publish_date: readerBook.year || null, covers: [] }, bibliographicRecord: null, authorIds: [], authorProfiles: [], related: [], localAuthorName: readerBook.author };
@@ -87,20 +87,20 @@ export default async function BookDetailPage({ params }) {
             <BookCover src={coverUrl} title={work.title} loading="eager" />
             <div className="work-copy"><span className="eyebrow">DETALHES DA OBRA</span><h1>{work.title}</h1>
                 {authorNames.map((name, index) => { const slug = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); return <Link className="work-author" href={`/autores/${primaryAuthorId || slug}`} key={`${name}-${index}`}>{name}</Link>; })}
-                <div className="work-facts">{(work.first_publish_date || bibliographicRecord?.first_publish_year) && <div><span>Primeira publicação</span><strong>{work.first_publish_date || bibliographicRecord?.first_publish_year}</strong></div>}{bibliographicRecord?.number_of_pages_median && <div><span>Mediana de páginas</span><strong>{bibliographicRecord.number_of_pages_median}</strong></div>}{bibliographicRecord?.edition_count && <div><span>Edições registradas</span><strong>{bibliographicRecord.edition_count}</strong></div>}</div>
+                <div className="work-facts">{(work.first_publish_date || bibliographicRecord?.first_publish_year) && <div><span>Primeira edicao</span><strong>{work.first_publish_date || bibliographicRecord?.first_publish_year}</strong></div>}{bibliographicRecord?.number_of_pages_median && <div><span>Paginas (mediana)</span><strong>{bibliographicRecord.number_of_pages_median}</strong></div>}{bibliographicRecord?.edition_count && <div><span>Edicoes registradas</span><strong>{bibliographicRecord.edition_count}</strong></div>}</div>
                 {readerBook && <Link className="primary-button read-book-button" href={`/livros/${workId}/ler`}>Ler o livro no Entrelinhas <ArrowUpRight size={16} /></Link>}
-                <a className="detail-source-link" href={readerBook?.sourceUrl || `https://openlibrary.org/works/${workId}`} target="_blank" rel="noreferrer">{readerBook?.gutenbergId ? `Fonte eBook ${readerBook.gutenbergId} no Project Gutenberg` : "Ficha Open Library"} <ArrowUpRight size={14} /></a>
+                <a className="detail-source-link" href={readerBook?.sourceUrl || `https://openlibrary.org/works/${workId}`} target="_blank" rel="noreferrer">{readerBook?.sourceName ? `Fonte: ${readerBook.sourceName}` : readerBook?.gutenbergId ? `Project Gutenberg eBook ${readerBook.gutenbergId}` : "Ficha Open Library"} <ArrowUpRight size={14} /></a>
             </div>
         </section>
         <section className="editorial-section"><span className="eyebrow">{editorial?.kicker || "LEITURA E CONTEXTO"}</span>
             <h2>{editorial?.headline || "Sobre esta obra"}</h2>
             {editorial ? editorial.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)
-                : description ? <><p>{description}</p><p className="source-caption">Descri??o bibliogr?fica: <a href={`https://openlibrary.org/works/${workId}`} target="_blank" rel="noreferrer">Open Library</a>.</p></> : readerBook ? <p>Esta obra integra a sele??o de literatura brasileira com texto integral dispon?vel no Entrelinhas. Leia a transcri??o digital paginada ou consulte a edi??o de origem no Project Gutenberg.</p> : <p>Os dados p?blicos dispon?veis n?o incluem uma apresenta??o editorial desta obra.</p>}
+                : description ? <><p>{description}</p><p className="source-caption">Descricao bibliografica: <a href={`https://openlibrary.org/works/${workId}`} target="_blank" rel="noreferrer">Open Library</a>.</p></> : readerBook ? <p>Esta obra integra a selecao brasileira com texto integral no Entrelinhas. Leia a transcricao paginada ou consulte a edicao de origem em {readerBook.sourceName || "Project Gutenberg"}.</p> : <p>Os dados publicos disponiveis nao incluem uma apresentacao editorial desta obra.</p>}
             {editorial?.themes?.length > 0 && <div className="work-themes"><h3>Temas para observar</h3><ul>{editorial.themes.map((theme) => <li key={theme}>{theme}</li>)}</ul></div>}
             {editorial?.sources?.length > 0 && <div className="editorial-sources"><span>Para continuar:</span>{editorial.sources.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.url}>{source.label} <ArrowUpRight size={13} /></a>)}</div>}
         </section>
         {primaryAuthorId && <p className="author-profile-cta">Conheça a trajetória e outras obras de <Link href={`/autores/${primaryAuthorId}`}>{authorNames[0] || "este autor"}</Link>.</p>}
         <RelatedBooks books={related} heading={primaryAuthorId ? `Mais de ${authorNames[0] || "este autor"}` : "Obras relacionadas"} />
-        <footer className="detail-footer">{readerBook?.gutenbergId ? <>Texto e dados da edi??o digital: <a href={readerBook.sourceUrl} target="_blank" rel="noreferrer">Project Gutenberg, eBook {readerBook.gutenbergId}</a>.</> : <>Dados bibliogr?ficos do <a href="https://openlibrary.org" target="_blank" rel="noreferrer">Open Library</a>.</>}</footer>
+        <footer className="detail-footer">{readerBook?.sourceName ? <>Texto e transcricao da edicao: <a href={readerBook.sourceUrl} target="_blank" rel="noreferrer">{readerBook.sourceName}</a>. Licenca: {readerBook.sourceLicense}.</> : readerBook?.gutenbergId ? <>Texto e dados da edicao digital: <a href={readerBook.sourceUrl} target="_blank" rel="noreferrer">Project Gutenberg eBook {readerBook.gutenbergId}</a>.</> : <>Dados bibliograficos do <a href="https://openlibrary.org" target="_blank" rel="noreferrer">Open Library</a>.</>}</footer>
     </main>;
 }

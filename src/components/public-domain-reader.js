@@ -9,6 +9,7 @@ const PAGE_SIZE = 5;
 const POSITION_KEY = "entrelinhas-reader-position";
 
 export default function PublicDomainReader({ book }) {
+    const sourceLabel = book.sourceName || `Project Gutenberg · eBook ${book.gutenbergId}`;
     const [sections, setSections] = useState([]);
     const [error, setError] = useState(false);
     const [fontSize, setFontSize] = useState(19);
@@ -24,7 +25,7 @@ export default function PublicDomainReader({ book }) {
             .then((response) => { if (!response.ok) throw new Error("Livro indisponível"); return response.text(); })
             .then((text) => {
                 if (!active) return;
-                const parsed = parseEbook(text, book.allowRomanHeadings);
+                const parsed = parseEbook(text, book.allowRomanHeadings, book.preserveLineBreaks);
                 if (!parsed.length) throw new Error("Nenhum capítulo reconhecido");
                 setSections(parsed);
                 try {
@@ -92,11 +93,11 @@ export default function PublicDomainReader({ book }) {
             <header className="reader-title"><span className="eyebrow">{book.author.toLocaleUpperCase("pt-BR")} · {book.year}</span><h1>{book.title}</h1><p>{book.author}</p><span className="reader-rule" /></header>
             {error ? <div className="empty-state"><h2>Não foi possível abrir o texto.</h2><p>Tente novamente mais tarde ou consulte a fonte original.</p></div>
                 : !ready ? <div className="loading-state">Preparando o texto para leitura…</div>
-                    : chapter && <><div className="reader-page-meta"><span>{chapter.heading || "ABERTURA"}</span><span>Página {safePageIndex + 1} de {pages.length}</span></div><div className="reader-content" key={`${chapterIndex}-${safePageIndex}`}><section className="reader-chapter">
+                    : chapter && <><div className="reader-page-meta"><span>{chapter.heading || "ABERTURA"}</span><span>Página {safePageIndex + 1} de {pages.length}</span></div><div className="reader-content" key={`${chapterIndex}-${safePageIndex}`} style={{ whiteSpace: book.preserveLineBreaks ? "pre-line" : undefined }}><section className="reader-chapter">
                         {chapter.heading && <h2>{chapter.heading}</h2>}
                         {(pages[safePageIndex] || []).map((paragraph, index) => <p key={index}>{paragraph}</p>)}
                     </section></div><nav className="reader-pagination" aria-label="Paginação do livro"><button onClick={() => goToChapter(0)} disabled={chapterIndex === 0 && safePageIndex === 0} aria-label="Ir para o início">«</button><button onClick={() => goToPage(safePageIndex - 1)} disabled={chapterIndex === 0 && safePageIndex === 0}>← <span>Anterior</span></button><label><span>Capítulo</span><select value={chapterIndex} onChange={(event) => goToChapter(Number(event.target.value))}>{sections.map((item, index) => <option value={index} key={`${item.heading}-${index}`}>{item.heading || "Abertura"}</option>)}</select></label><span className="reader-page-number">{chapterIndex + 1}/{sections.length} · {safePageIndex + 1}/{pages.length}</span><button onClick={() => goToPage(safePageIndex + 1)} disabled={isLastPage}><span>Próxima</span> →</button><button onClick={() => goToChapter(sections.length - 1)} disabled={isLastPage} aria-label="Ir para o fim">»</button></nav></>}
-            <footer className="reader-credit"><strong>Sobre este texto</strong><p>Transcrição digital baseada no eBook {book.gutenbergId} do Project Gutenberg. A grafia histórica da edição foi preservada; a organização dos parágrafos foi adaptada para a tela.</p><p>{book.author} morreu em {book.authorDeathYear}. Pelo prazo do art. 41 da Lei brasileira de Direitos Autorais, o texto original está em domínio público no Brasil. A edição digital consultada é identificada como domínio público nos Estados Unidos; veja na fonte os créditos da transcrição.</p><div><a href={book.sourceUrl} target="_blank" rel="noreferrer">Project Gutenberg · eBook {book.gutenbergId}</a><a href="https://www.planalto.gov.br/ccivil_03/leis/l9610.htm" target="_blank" rel="noreferrer">Lei brasileira de direitos autorais · art. 41</a></div><Link href={`/livros/${book.workId}`}>Voltar à página da obra</Link></footer>
+            <footer className="reader-credit"><strong>Sobre este texto</strong><p>{book.sourceName === "Wikisource" ? `Transcrição da edição ${book.sourceEdition}, consultada na Wikisource. A organização foi adaptada para o leitor do Entrelinhas e a grafia da edição foi preservada.` : `Transcrição digital baseada no eBook ${book.gutenbergId} do Project Gutenberg. A grafia histórica da edição foi preservada; a organização dos parágrafos foi adaptada para a tela.`}</p><p>{book.author} morreu em {book.authorDeathYear}. Pelo prazo do art. 41 da Lei brasileira de Direitos Autorais, o texto original está em domínio público no Brasil. {book.sourceLicense ? `A transcrição digital da Wikisource está licenciada sob ${book.sourceLicense}; esta versão adaptada é disponibilizada sob a mesma licença.` : "A edição digital consultada é identificada como domínio público nos Estados Unidos; veja na fonte os créditos da transcrição."}</p><div><a href={book.sourceUrl} target="_blank" rel="noreferrer">{sourceLabel}</a>{book.sourceLicenseUrl && <a href={book.sourceLicenseUrl} target="_blank" rel="noreferrer">Licença {book.sourceLicense}</a>}<a href="https://www.planalto.gov.br/ccivil_03/leis/l9610.htm" target="_blank" rel="noreferrer">Lei brasileira de direitos autorais · art. 41</a></div><Link href={`/livros/${book.workId}`}>Voltar à página da obra</Link></footer>
         </article>
     </main>;
 }
