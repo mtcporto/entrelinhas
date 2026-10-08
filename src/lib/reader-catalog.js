@@ -17,6 +17,7 @@ export const readerBooks = {
         author: "Machado de Assis",
         authorDeathYear: 1908,
         year: "1899",
+        coverUrl: "/covers/dom-casmurro.webp",
         textFile: "/texts/dom-casmurro.txt",
         gutenbergId: "55752",
         sourceUrl: "https://www.gutenberg.org/ebooks/55752",
