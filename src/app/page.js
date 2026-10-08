@@ -1,5 +1,5 @@
 import LibraryApp from "@/components/library-app";
-import { normalizeBook, searchBooks } from "@/lib/books";
+import { deduplicateBooks, normalizeBook, searchBooks } from "@/lib/books";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +8,7 @@ export default async function HomePage() {
 
     try {
         const catalog = await searchBooks('subject:"Brazilian literature"', 40);
-        initialBooks = catalog.items.map(normalizeBook);
+        initialBooks = deduplicateBooks(catalog.items.map(normalizeBook));
     } catch (error) {
         console.error("Initial book catalog unavailable:", error);
     }

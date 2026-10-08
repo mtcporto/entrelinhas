@@ -39,7 +39,7 @@ export async function searchAuthorWorks(authorId, limit = 40) {
     if (!/^OL\d+A$/.test(authorId)) throw new Error("Identificador Open Library inválido");
     const url = new URL(OPEN_LIBRARY_URL);
     url.searchParams.set("q", `author_key:${authorId} language:por`);
-    url.searchParams.set("fields", ["key", "title", "author_name", "author_key", "first_publish_year", "cover_i"].join(","));
+    url.searchParams.set("fields", ["key", "title", "author_name", "author_key", "first_publish_year", "edition_count", "cover_i"].join(","));
     url.searchParams.set("limit", String(Math.min(Math.max(limit, 1), 100)));
     const response = await fetch(url, {
         headers: {
@@ -55,14 +55,16 @@ export async function searchAuthorWorks(authorId, limit = 40) {
         throw error;
     }
     const result = await response.json();
-    const uniqueTitles = new Set();
-    return (result.docs || []).filter((book) => {
-        const title = (book.title || "").replace(/\([^)]*\)/g, " ").normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").replace(/[^a-z0-9]+/g, " ").trim();
-        if (!title || uniqueTitles.has(title)) return false;
-        uniqueTitles.add(title);
-        return true;
-    });
+    const worksByIdentity = new Map();
+    for (const book of result.docs || []) {
+        const title = normalizedIdentityPart(book.title);
+        if (!title) continue;
+        const identity = `${title}|${authorId}`;
+        const current = worksByIdentity.get(identity);
+        const score = (candidate) => (candidate.edition_count || 0) * 10 + (candidate.cover_i ? 2 : 0);
+        if (!current || score(book) > score(current)) worksByIdentity.set(identity, book);
+    }
+    return [...worksByIdentity.values()];
 }
 
 export async function searchWorkRecord(workId) {
@@ -128,4 +130,25 @@ export function normalizeBook(book) {
             : null,
         infoUrl: workKey ? `https://openlibrary.org${workKey}` : null,
     };
+}
+
+function normalizedIdentityPart(value) {
+    return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .toLocaleLowerCase("pt-BR").replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/** Collapse duplicate Open Library work records without merging distinct titled volumes. */
+export function deduplicateBooks(books = []) {
+    const unique = new Map();
+    for (const book of books) {
+        const title = normalizedIdentityPart(book.title);
+        const primaryAuthor = normalizedIdentityPart(book.authors?.[0]);
+        // Open Library sometimes records translators/editors as extra authors; use the lead author.
+        // Without an author, title alone is too weak to establish that two records are one work.
+        const identity = title && primaryAuthor ? `${title}|${primaryAuthor}` : `id:${book.id || `unknown-${unique.size}`}`;
+        const current = unique.get(identity);
+        const score = (candidate) => (candidate.editions || 0) * 10 + (candidate.coverUrl ? 2 : 0) + (candidate.pageCount ? 1 : 0);
+        if (!current || score(book) > score(current)) unique.set(identity, book);
+    }
+    return [...unique.values()];
 }

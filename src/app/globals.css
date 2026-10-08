@@ -131,8 +131,14 @@ a { color: inherit; text-decoration: none; }
 .book-card:hover .book-cover { transform: scale(1.035); }
 .book-cover-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 11px; padding: 20px; background: linear-gradient(145deg, #e4e9d9, #d3ddc9); color: #617a61; text-align: center; }
 .book-cover-placeholder span { display: -webkit-box; overflow: hidden; color: #38513d; font-family: Georgia, "Times New Roman", serif; font-size: 17px; line-height: 1.3; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
-.book-badge { position: absolute; top: 11px; left: 11px; padding: 6px 8px; background: #f3e3cf; color: #815839; font-size: 9px; font-weight: 700; letter-spacing: .04em; }
+.book-badges { position: absolute; top: 11px; left: 11px; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+.book-badge { padding: 6px 8px; background: #f3e3cf; color: #815839; font-size: 9px; font-weight: 700; letter-spacing: .04em; }
 .book-badge.suggested { background: #e5ebce; color: #496243; }
+.book-badge.reader-available { background: #315d46; color: #fffefa; }
+.period-chip.reader-filter { display: inline-flex; align-items: center; gap: 7px; border-color: #a9b994; background: #f1f4e9; color: #315d46; }
+.period-chip.reader-filter span { min-width: 17px; height: 17px; display: grid; place-items: center; border-radius: 50%; background: #dfe7d2; font-size: 9px; }
+.period-chip.reader-filter.selected { border-color: var(--green); background: var(--green); color: #fff; }
+.period-chip.reader-filter.selected span { background: rgba(255, 255, 255, .18); }
 .book-info { padding: 15px 15px 11px; }
 .book-meta { overflow: hidden; margin-bottom: 7px; color: #87917f; font-size: 9px; font-weight: 700; letter-spacing: .09em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
 .book-title { display: -webkit-box; min-height: 46px; overflow: hidden; padding: 0; border: 0; background: transparent; color: var(--ink); font-family: Georgia, "Times New Roman", serif; font-size: 17px; font-weight: 600; line-height: 1.34; text-align: left; cursor: pointer; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }

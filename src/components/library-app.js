@@ -16,6 +16,21 @@ import {
     X,
 } from "lucide-react";
 import { classicBrazilianLiterature, requiredReading, suggestedReading } from "@/lib/catalog";
+import { deduplicateBooks } from "@/lib/books";
+import { readerBooks } from "@/lib/reader-catalog";
+
+const readerBookCards = Object.values(readerBooks).map((book) => ({
+    id: `/works/${book.workId}`,
+    title: book.title,
+    authors: [book.author],
+    authorKeys: [],
+    firstPublished: Number(book.year) || null,
+    pageCount: null,
+    editions: 0,
+    subjects: [],
+    coverUrl: null,
+    infoUrl: `https://openlibrary.org/works/${book.workId}`,
+}));
 
 const movementNames = {
     barroco: "Barroco",
@@ -39,9 +54,9 @@ const periods = [
 function readLocalLists() {
     try {
         const stored = JSON.parse(localStorage.getItem("entrelinhas:reading-lists") || "null");
-        if (Array.isArray(stored) && stored.every((list) => typeof list.id === "string" && Array.isArray(list.books))) return stored;
+        if (Array.isArray(stored) && stored.every((list) => typeof list.id === "string" && Array.isArray(list.books))) return stored.map((list) => ({ ...list, books: deduplicateBooks(list.books) }));
         const legacy = JSON.parse(localStorage.getItem("entrelinhas:reading-list") || "[]");
-        if (Array.isArray(legacy) && legacy.length) return [{ id: "favorites", name: "Favoritos", books: legacy }];
+        if (Array.isArray(legacy) && legacy.length) return [{ id: "favorites", name: "Favoritos", books: deduplicateBooks(legacy) }];
     } catch {}
     return [{ id: "favorites", name: "Favoritos", books: [] }];
 }
@@ -115,6 +130,7 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
     const [view, setView] = useState("discover");
     const [search, setSearch] = useState("");
     const [queryOverride, setQueryOverride] = useState("");
+    const [readerOnly, setReaderOnly] = useState(false);
     const [loading, setLoading] = useState(initialBooks.length === 0);
     const [error, setError] = useState("");
     const [accountState, setAccountState] = useState("loading");
@@ -155,8 +171,13 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
                 if (!listResponse.ok) throw new Error("lists_unavailable");
                 const data = await listResponse.json();
                 const localLists = readLocalLists();
-                const nextLists = data.lists.length ? data.lists : localLists;
+                const remoteLists = data.lists.map((list) => ({ ...list, books: deduplicateBooks(list.books || []) }));
+                const nextLists = remoteLists.length ? remoteLists : localLists;
                 setLists(nextLists);
+                if (remoteLists.some((list, index) => list.books.length !== (data.lists[index]?.books || []).length)) {
+                    const cleanup = await fetch("/api/lists", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lists: remoteLists }) });
+                    if (!cleanup.ok) throw new Error("Could not clean duplicate saved books");
+                }
                 if (!data.lists.length && localLists.some((list) => list.books.length)) {
                     const migration = await fetch("/api/lists", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lists: localLists }) });
                     if (!migration.ok) throw new Error("Could not migrate local lists");
@@ -266,7 +287,7 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
             const payload = await response.json();
             if (!response.ok) throw new Error(payload.error || "catalog_unavailable");
             if (currentRequest !== requestId.current) return;
-            setBooks(payload.items.map((item) => ({
+            setBooks(deduplicateBooks(payload.items.map((item) => ({
                 id: item.key || `${item.title}-${(item.author_name || []).join(",")}`,
                 title: item.title || "Título não informado",
                 authors: item.author_name || [],
@@ -277,7 +298,7 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
                 subjects: item.subject || [],
                 coverUrl: item.cover_i ? `https://covers.openlibrary.org/b/id/${item.cover_i}-M.jpg` : null,
                 infoUrl: item.key ? `https://openlibrary.org${item.key}` : null,
-            })));
+            }))));
             setQueryOverride(queryForRequest);
         } catch (loadError) {
             if (currentRequest !== requestId.current) return;
@@ -292,6 +313,7 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
 
     function choosePeriod(period) {
         setActivePeriod(period);
+        setReaderOnly(false);
         setQueryOverride("");
         setSearch("");
         setView("discover");
@@ -301,6 +323,7 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
     function submitSearch(event) {
         event.preventDefault();
         const term = search.trim();
+        setReaderOnly(false);
         setQueryOverride(term);
         setView("discover");
         if (term) loadCatalog(activePeriod, term);
@@ -324,7 +347,7 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
     }
 
     const selectedList = lists.find((list) => list.id === activeList) || lists[0];
-    const visibleBooks = view === "saved" ? savedBooks : books;
+    const visibleBooks = view === "saved" ? savedBooks : readerOnly ? readerBookCards : books;
 
     return (
         <main className="site-shell">
@@ -383,12 +406,13 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
                     <form className="search-form" onSubmit={submitSearch}>
                         <Search size={19} className="search-icon" />
                         <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Busque por título ou autor..." aria-label="Buscar livros por título ou autor" />
-                        {search && <button className="clear-search" type="button" onClick={() => { setSearch(""); setQueryOverride(""); loadCatalog(activePeriod, ""); }} aria-label="Limpar busca"><X size={17} /></button>}
+                        {search && <button className="clear-search" type="button" onClick={() => { setSearch(""); setQueryOverride(""); setReaderOnly(false); loadCatalog(activePeriod, ""); }} aria-label="Limpar busca"><X size={17} /></button>}
                         <button className="search-submit" type="submit">Buscar</button>
                     </form>
                     <div className="filter-heading"><span>Explore por período</span><span className="filter-hint">Escolha uma categoria</span></div>
                     <div className="period-filters" role="group" aria-label="Filtrar por período literário">
                         {periods.map((period) => <button key={period.id} className={period.id === activePeriod ? "period-chip selected" : "period-chip"} onClick={() => choosePeriod(period.id)}>{period.label}</button>)}
+                        <button className={readerOnly ? "period-chip reader-filter selected" : "period-chip reader-filter"} aria-pressed={readerOnly} onClick={() => setReaderOnly((active) => !active)}>Texto integral <span>{readerBookCards.length}</span></button>
                     </div>
                 </>}
 
@@ -405,9 +429,11 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
                                 const required = bookMatchesTitle(book, requiredReading);
                                 const suggested = bookMatchesTitle(book, suggestedReading);
                                 const movement = movementFor(book);
+                                const workId = book.id?.match(/(?:\/works\/)?(OL\d+W)$/)?.[1];
+                                const hasReader = Boolean(workId && readerBooks[workId]);
                                 return <article className="book-card" key={book.id}>
                                     <Link className="cover-button" href={bookHref(book)} aria-label={`Ver detalhes de ${book.title}`}>
-                                        <div className="cover-frame"><BookCover book={book} />{(required || suggested) && <span className={required ? "book-badge required" : "book-badge suggested"}>{required ? "Obrigatória" : "Sugestão"}</span>}</div>
+                                        <div className="cover-frame"><BookCover book={book} />{(required || suggested || hasReader) && <span className="book-badges">{hasReader && <span className="book-badge reader-available">Texto integral</span>}{(required || suggested) && <span className={required ? "book-badge required" : "book-badge suggested"}>{required ? "Obrigatória" : "Sugestão"}</span>}</span>}</div>
                                     </Link>
                                     <div className="book-info">
                                         <div className="book-meta">{movement || "Literatura brasileira"}{book.firstPublished ? ` · ${book.firstPublished}` : ""}</div>
