@@ -45,3 +45,9 @@ python scripts/import-wikisource-epub.py 'Eu_(Augusto_dos_Anjos,_1912)' public/t
 O parâmetro `--min-words` é uma barreira simples contra páginas de índice e transcrições claramente parciais; ele não substitui a conferência da edição, dos capítulos e do fim do texto. Registre no catálogo a URL da edição, a edição de referência, a licença da transcrição e os dados do autor. Wikisource pode oferecer transcrição sob licença Creative Commons mesmo quando a obra original está em domínio público; preserve a atribuição e cumpra a licença da transcrição derivada.
 
 A seleção brasileira é editorial e incremental. Confirme autoria brasileira, idioma/escopo, integridade da transcrição e elegibilidade da obra em domínio público no Brasil. A declaração de domínio público dos EUA do Gutenberg, por si só, não comprova o status jurídico brasileiro. Quando a fonte oferecer apenas PDF ou uma transcrição parcial, não a apresente como texto integral.
+
+## Perfis editoriais
+
+Biografias, resumos, textos de contexto e referências dos autores e das obras com texto integral são mantidos em português pelo Entrelinhas e persistidos nas tabelas `editorial_profiles` e `editorial_sources` do Turso. `src/lib/editorial-seed-data.js` é a cópia de segurança versionável; as páginas leem o banco no servidor e usam essa cópia se o banco estiver indisponível. A Open Library continua sendo usada para dados bibliográficos e capas, não para traduzir os perfis editoriais.
+
+Para sincronizar o catálogo editorial com o Turso configurado em `.env.local`, execute `npm run seed:editorial`. A carga é idempotente e atualiza os perfis e suas fontes sem alterar usuários, sessões ou listas de leitura.

@@ -63,4 +63,22 @@ export const readingListBooks = sqliteTable("reading_list_books", {
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 }, (table) => ({ bookUnique: uniqueIndex("reading_list_books_unique").on(table.listId, table.bookId) }));
 
-export const authSchema = { user, session, account, verification };
+export const editorialProfiles = sqliteTable("editorial_profiles", {
+    entityType: text("entity_type").notNull(),
+    entityId: text("entity_id").notNull(),
+    title: text("title").notNull(),
+    summary: text("summary").notNull(),
+    editorial: text("editorial").notNull(),
+    themesJson: text("themes_json").notNull().default("[]"),
+    updatedAt: integer("updated_at").notNull(),
+}, (table) => ({ profilePk: uniqueIndex("editorial_profiles_pk").on(table.entityType, table.entityId) }));
+
+export const editorialSources = sqliteTable("editorial_sources", {
+    entityType: text("entity_type").notNull(),
+    entityId: text("entity_id").notNull(),
+    label: text("label").notNull(),
+    url: text("url").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+}, (table) => ({ sourcePk: uniqueIndex("editorial_sources_pk").on(table.entityType, table.entityId, table.url), entityIndex: index("editorial_sources_entity_index").on(table.entityType, table.entityId) }));
+
+export const authSchema = { user, session, account, verification, editorialProfiles, editorialSources };

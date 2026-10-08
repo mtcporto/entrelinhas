@@ -22,7 +22,9 @@ export async function POST(request) {
         `CREATE TABLE IF NOT EXISTS reading_lists (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
         `CREATE INDEX IF NOT EXISTS reading_lists_user_id_index ON reading_lists(user_id)`,
         `CREATE TABLE IF NOT EXISTS reading_list_books (list_id TEXT NOT NULL, book_id TEXT NOT NULL, book_data TEXT NOT NULL, created_at INTEGER NOT NULL, UNIQUE(list_id, book_id))`,
-        `CREATE TABLE IF NOT EXISTS author_biography_translations (author_id TEXT PRIMARY KEY, source_hash TEXT NOT NULL, source_text TEXT NOT NULL, translated_text TEXT NOT NULL, model TEXT NOT NULL, updated_at INTEGER NOT NULL)`,
+        `CREATE TABLE IF NOT EXISTS editorial_profiles (entity_type TEXT NOT NULL CHECK(entity_type IN ('author', 'work')), entity_id TEXT NOT NULL, title TEXT NOT NULL, summary TEXT NOT NULL, editorial TEXT NOT NULL, themes_json TEXT NOT NULL DEFAULT '[]', updated_at INTEGER NOT NULL, PRIMARY KEY(entity_type, entity_id))`,
+        `CREATE TABLE IF NOT EXISTS editorial_sources (entity_type TEXT NOT NULL, entity_id TEXT NOT NULL, label TEXT NOT NULL, url TEXT NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(entity_type, entity_id, url))`,
+        `CREATE INDEX IF NOT EXISTS editorial_sources_entity_index ON editorial_sources(entity_type, entity_id)`,
     ];
     try {
         const db = getDb();

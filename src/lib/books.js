@@ -67,6 +67,26 @@ export async function searchAuthorWorks(authorId, limit = 40) {
     return [...worksByIdentity.values()];
 }
 
+export async function searchAuthorProfile(name) {
+    const url = new URL("https://openlibrary.org/search/authors.json");
+    url.searchParams.set("q", name);
+    url.searchParams.set("limit", "5");
+    const response = await fetch(url, {
+        headers: {
+            Accept: "application/json",
+            "User-Agent": process.env.OPEN_LIBRARY_USER_AGENT || "Entrelinhas/1.0 (+https://livros-five-plum.vercel.app)",
+        },
+        next: { revalidate: 21600 },
+        signal: AbortSignal.timeout(10000),
+    });
+    if (!response.ok) return null;
+    const result = await response.json();
+    const expected = normalizedIdentityPart(name);
+    const match = (result.docs || []).find((author) => normalizedIdentityPart(author.name) === expected && /^\/authors\/OL\d+A$/.test(author.key || ""));
+    if (!match) return null;
+    return getOpenLibraryJson(match.key);
+}
+
 export async function searchWorkRecord(workId) {
     if (!/^OL\d+W$/.test(workId)) throw new Error("Identificador Open Library inválido");
     const url = new URL(OPEN_LIBRARY_URL);

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "seed:editorial": "node scripts/seed-editorial-content.mjs"
   },
   "repository": {
     "type": "git",
