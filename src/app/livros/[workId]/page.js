@@ -4,8 +4,8 @@ import { ArrowLeft, ArrowUpRight, BookOpen } from "lucide-react";
 import BookCover from "@/components/book-cover";
 import RelatedBooks from "@/components/related-books";
 import { getOpenLibraryJson, searchAuthorWorks, searchWorkRecord } from "@/lib/books";
-
-const PUBLIC_DOMAIN_WORK = "OL1003017W";
+import { getReaderBook } from "@/lib/reader-catalog";
+import { workEditorial } from "@/lib/work-editorial";
 
 function descriptionText(description) {
     const value = typeof description === "string" ? description : description?.value;
@@ -72,7 +72,8 @@ export default async function BookDetailPage({ params }) {
     const coverId = work.covers?.find((id) => id > 0) || bibliographicRecord?.cover_i;
     const coverUrl = coverId ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg` : null;
     const description = descriptionText(work.description);
-    const isPublicDomainDigital = workId === PUBLIC_DOMAIN_WORK;
+    const readerBook = getReaderBook(workId);
+    const editorial = workEditorial[workId];
 
     return <main className="detail-shell">
         <header className="detail-topbar"><Link className="detail-back" href="/"><ArrowLeft size={16} /> Voltar ao catálogo</Link><Link className="brand" href="/"><span className="brand-mark"><BookOpen size={20} /></span><span>entrelinhas<span className="brand-period">.</span></span></Link></header>
@@ -81,13 +82,16 @@ export default async function BookDetailPage({ params }) {
             <div className="work-copy"><span className="eyebrow">DETALHES DA OBRA</span><h1>{work.title}</h1>
                 {authorNames.map((name, index) => primaryAuthorId ? <Link className="work-author" href={`/autores/${primaryAuthorId}`} key={`${name}-${index}`}>{name}</Link> : <span className="work-author" key={`${name}-${index}`}>{name}</span>)}
                 <div className="work-facts">{(work.first_publish_date || bibliographicRecord?.first_publish_year) && <div><span>Primeira publicação</span><strong>{work.first_publish_date || bibliographicRecord?.first_publish_year}</strong></div>}{bibliographicRecord?.number_of_pages_median && <div><span>Mediana de páginas</span><strong>{bibliographicRecord.number_of_pages_median}</strong></div>}{bibliographicRecord?.edition_count && <div><span>Edições registradas</span><strong>{bibliographicRecord.edition_count}</strong></div>}</div>
-                {isPublicDomainDigital && <Link className="primary-button read-book-button" href={`/livros/${workId}/ler`}>Ler o livro no Entrelinhas <ArrowUpRight size={16} /></Link>}
+                {readerBook && <Link className="primary-button read-book-button" href={`/livros/${workId}/ler`}>Ler o livro no Entrelinhas <ArrowUpRight size={16} /></Link>}
                 <a className="detail-source-link" href={`https://openlibrary.org/works/${workId}`} target="_blank" rel="noreferrer">Ficha bibliográfica Open Library <ArrowUpRight size={14} /></a>
             </div>
         </section>
-        <section className="editorial-section"><span className="eyebrow">POR QUE ESTA OBRA IMPORTA</span>
-            {workId === PUBLIC_DOMAIN_WORK ? <><h2>Um narrador que escreve depois do fim.</h2><p>Brás Cubas conta suas memórias do além e interrompe a narrativa para conversar com o leitor. A forma fragmentada, a ironia e a crítica às hierarquias sociais fizeram do romance uma ruptura na ficção de Machado de Assis.</p><p>A obra saiu primeiro em folhetim, em 1880, e chegou em livro no ano seguinte. O projeto acadêmico Machado de Assis Digital Corpus destaca a mudança radical de estilo e temas como escravidão, posição social e papel das mulheres.</p><div className="editorial-sources"><a href="https://machado.byu.edu/text/memorias-postumas-de-bras-cubas/" target="_blank" rel="noreferrer">Machado de Assis Digital Corpus <ArrowUpRight size={13} /></a><a href="https://digital.bbm.usp.br/handle/bbm/4826" target="_blank" rel="noreferrer">Edição de 1881 na Brasiliana USP <ArrowUpRight size={13} /></a></div></>
-                : description ? <><p>{description}</p><p className="source-caption">Descrição bibliográfica: <a href={`https://openlibrary.org/works/${workId}`} target="_blank" rel="noreferrer">Open Library</a>.</p></> : <p>Explore os dados bibliográficos e conheça outras obras relacionadas a este título.</p>}
+        <section className="editorial-section"><span className="eyebrow">{editorial?.kicker || "LEITURA E CONTEXTO"}</span>
+            <h2>{editorial?.headline || "Sobre esta obra"}</h2>
+            {editorial ? editorial.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)
+                : description ? <><p>{description}</p><p className="source-caption">Descrição bibliográfica: <a href={`https://openlibrary.org/works/${workId}`} target="_blank" rel="noreferrer">Open Library</a>.</p></> : <p>Os dados públicos disponíveis não incluem uma apresentação editorial desta obra.</p>}
+            {editorial?.themes?.length > 0 && <div className="work-themes"><h3>Temas para observar</h3><ul>{editorial.themes.map((theme) => <li key={theme}>{theme}</li>)}</ul></div>}
+            {editorial?.sources?.length > 0 && <div className="editorial-sources"><span>Para continuar:</span>{editorial.sources.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.url}>{source.label} <ArrowUpRight size={13} /></a>)}</div>}
         </section>
         {primaryAuthorId && <p className="author-profile-cta">Conheça a trajetória e outras obras de <Link href={`/autores/${primaryAuthorId}`}>{authorNames[0] || "este autor"}</Link>.</p>}
         <RelatedBooks books={related} heading={primaryAuthorId ? `Mais de ${authorNames[0] || "este autor"}` : "Obras relacionadas"} />

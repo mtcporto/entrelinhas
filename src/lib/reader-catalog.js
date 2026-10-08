@@ -1,0 +1,61 @@
+export const readerBooks = {
+    OL1003017W: {
+        workId: "OL1003017W",
+        title: "Memórias Póstumas de Brás Cubas",
+        author: "Machado de Assis",
+        authorDeathYear: 1908,
+        year: "1881",
+        textFile: "/texts/memorias-postumas-de-bras-cubas.txt",
+        gutenbergId: "54829",
+        sourceUrl: "https://www.gutenberg.org/ebooks/54829",
+        allowRomanHeadings: false,
+    },
+    OL1003040W: {
+        workId: "OL1003040W",
+        title: "Dom Casmurro",
+        author: "Machado de Assis",
+        authorDeathYear: 1908,
+        year: "1899",
+        textFile: "/texts/dom-casmurro.txt",
+        gutenbergId: "55752",
+        sourceUrl: "https://www.gutenberg.org/ebooks/55752",
+        allowRomanHeadings: true,
+    },
+    OL1003079W: {
+        workId: "OL1003079W",
+        title: "Quincas Borba",
+        author: "Machado de Assis",
+        authorDeathYear: 1908,
+        year: "1891",
+        textFile: "/texts/quincas-borba.txt",
+        gutenbergId: "55682",
+        sourceUrl: "https://www.gutenberg.org/ebooks/55682",
+        allowRomanHeadings: false,
+    },
+    OL1525650W: {
+        workId: "OL1525650W",
+        title: "Iracema",
+        author: "José de Alencar",
+        authorDeathYear: 1877,
+        year: "1865",
+        textFile: "/texts/iracema.txt",
+        gutenbergId: "67740",
+        sourceUrl: "https://www.gutenberg.org/ebooks/67740",
+        allowRomanHeadings: false,
+    },
+    OL7058886W: {
+        workId: "OL7058886W",
+        title: "O Cortiço",
+        author: "Aluísio Azevedo",
+        authorDeathYear: 1913,
+        year: "1890",
+        textFile: "/texts/o-cortico.txt",
+        gutenbergId: "69187",
+        sourceUrl: "https://www.gutenberg.org/ebooks/69187",
+        allowRomanHeadings: false,
+    },
+};
+
+export function getReaderBook(workId) {
+    return readerBooks[workId] || null;
+}
