@@ -1,56 +1,30 @@
 "use client";
-
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-    ArrowDownWideNarrow,
     ArrowUpRight,
-    BookMarked,
     BookOpen,
     Bookmark,
     Heart,
-    LoaderCircle,
     Search,
     Sparkles,
     X,
 } from "lucide-react";
-import { classicBrazilianLiterature, requiredReading, suggestedReading } from "@/lib/catalog";
 import { deduplicateBooks } from "@/lib/books";
 import { readerBooks } from "@/lib/reader-catalog";
-
+const readerBooksByAuthor = Object.values(readerBooks).reduce((authors, book) => {
+    const name = book.author.trim();
+    const existing = authors.get(name) || [];
+    existing.push(book);
+    authors.set(name, existing);
+    return authors;
+}, new Map());
 const readerBookCards = Object.values(readerBooks).map((book) => ({
-    id: `/works/${book.workId}`,
-    title: book.title,
-    authors: [book.author],
-    authorKeys: [],
-    firstPublished: Number(book.year) || null,
-    pageCount: null,
-    editions: 0,
-    subjects: [],
-    coverUrl: null,
-    infoUrl: book.sourceUrl,
+    id: `/works/${book.workId}`, title: book.title, authors: [book.author], authorKeys: [],
+    firstPublished: Number(book.year) || null, pageCount: null, editions: 0, subjects: [], coverUrl: null, infoUrl: book.sourceUrl,
 }));
-
-const movementNames = {
-    barroco: "Barroco",
-    arcadismo: "Arcadismo",
-    romantismo: "Romantismo",
-    realismo: "Realismo",
-    parnasianismo: "Parnasianismo",
-    simbolismo: "Simbolismo",
-    "pre-modernismo": "Pré-Modernismo",
-    modernismo: "Modernismo",
-    contemporaneo: "Contemporâneo",
-};
-
-const periods = [
-    { id: "todos", label: "Todos os livros" },
-    { id: "obrigatorias", label: "Leituras obrigatórias" },
-    { id: "sugeridas", label: "Sugestões" },
-    ...Object.entries(movementNames).map(([id, label]) => ({ id, label })),
-];
-
+const readerBookCardById = new Map(readerBookCards.map((book) => [book.id, book]));
 function readLocalLists() {
     try {
         const stored = JSON.parse(localStorage.getItem("entrelinhas:reading-lists") || "null");
@@ -60,30 +34,17 @@ function readLocalLists() {
     } catch {}
     return [{ id: "favorites", name: "Favoritos", books: [] }];
 }
-
-function titleQuery(titles) {
-    return titles.map((title) => `title:"${title.replace(/["\\]/g, "")}"`).join(" OR ");
-}
-
-function authorQuery(authors) {
-    return authors.map((author) => `author:"${author.replace(/["\\]/g, "")}"`).join(" OR ");
-}
-
-function bookMatchesTitle(book, list) {
-    const title = book.title.toLocaleLowerCase("pt-BR");
-    return list.some((work) => title.includes(work.toLocaleLowerCase("pt-BR")));
+function authorHref(book) {
+    const key = book.authorKeys?.[0];
+    const author = book.authors?.[0] || "";
+    const slug = author.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return /^OL\d+A$/.test(key || "") ? `/autores/${key}` : `/autores/${slug}`;
 }
 
 function bookHref(book) {
     const match = book.id?.match(/(?:\/works\/)?(OL\d+W|PG\d+)$/);
     return match ? `/livros/${match[1]}` : book.infoUrl || "#";
 }
-
-function authorHref(book) {
-    const key = book.authorKeys?.[0];
-    return /^OL\d+A$/.test(key || "") ? `/autores/${key}` : null;
-}
-
 function BookCover({ book, large = false }) {
     if (book.coverUrl) {
         return (
@@ -100,7 +61,6 @@ function BookCover({ book, large = false }) {
             />
         );
     }
-
     return (
         <div className={large ? "book-cover book-cover-placeholder book-cover-large" : "book-cover book-cover-placeholder"} aria-label="Capa indisponível">
             <BookOpen size={28} strokeWidth={1.3} />
@@ -108,31 +68,11 @@ function BookCover({ book, large = false }) {
         </div>
     );
 }
-
-function movementFor(book) {
-    const authors = book.authors.join(" ").toLocaleLowerCase("pt-BR");
-    if (/machado de assis|aluísio azevedo|raul pompéia/.test(authors)) return "Realismo";
-    if (/josé de alencar|gonçalves dias|castro alves/.test(authors)) return "Romantismo";
-    if (/mário de andrade|oswald de andrade|graciliano ramos|jorge amado|drummond|bandeira/.test(authors)) return "Modernismo";
-    if (/clarice lispector|guimarães rosa/.test(authors)) return "Contemporâneo";
-    if (/lima barreto|euclides da cunha|monteiro lobato/.test(authors)) return "Pré-Modernismo";
-    if (/olavo bilac|raimundo correia/.test(authors)) return "Parnasianismo";
-    if (/cruz e sousa|alphonsus/.test(authors)) return "Simbolismo";
-    if (/gregório de matos|padre antônio vieira/.test(authors)) return "Barroco";
-    if (/cláudio manuel|tomás antônio gonzaga|basílio da gama/.test(authors)) return "Arcadismo";
-    return null;
-}
-
-export default function LibraryApp({ initialBooks, googleEnabled = false }) {
-    const [books, setBooks] = useState(initialBooks);
+export default function LibraryApp({ googleEnabled = false }) {
+    const [books] = useState(readerBookCards);
     const [savedBooks, setSavedBooks] = useState([]);
-    const [activePeriod, setActivePeriod] = useState("todos");
     const [view, setView] = useState("discover");
     const [search, setSearch] = useState("");
-    const [queryOverride, setQueryOverride] = useState("");
-    const [readerOnly, setReaderOnly] = useState(false);
-    const [loading, setLoading] = useState(initialBooks.length === 0);
-    const [error, setError] = useState("");
     const [accountState, setAccountState] = useState("loading");
     const [user, setUser] = useState(null);
     const [lists, setLists] = useState([{ id: "favorites", name: "Favoritos", books: [] }]);
@@ -140,22 +80,13 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
     const [accountDialog, setAccountDialog] = useState("");
     const [accountMessage, setAccountMessage] = useState("");
     const [accountBusy, setAccountBusy] = useState(false);
-    const requestId = useRef(0);
-    const catalogRef = useRef(null);
-
     useEffect(() => {
         void loadAccount();
     }, []);
-
-    useEffect(() => {
-        if (initialBooks.length === 0) loadCatalog("todos", "");
-    }, [initialBooks.length]);
-
     useEffect(() => {
         const active = lists.find((list) => list.id === activeList) || lists[0];
         setSavedBooks(active?.books || []);
     }, [activeList, lists]);
-
     async function loadAccount() {
         try {
             const response = await fetch("/api/auth/get-session", { cache: "no-store" });
@@ -194,7 +125,6 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
             setAccountState("offline");
         }
     }
-
     async function saveLists(nextLists) {
         setLists(nextLists);
         if (accountState !== "signed-in") {
@@ -214,7 +144,6 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
             await loadAccount();
         }
     }
-
     async function submitAccount(event) {
         event.preventDefault();
         setAccountBusy(true);
@@ -237,7 +166,6 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
             setAccountBusy(false);
         }
     }
-
     async function signOut() {
         await fetch("/api/auth/sign-out", { method: "POST" });
         try { localStorage.setItem("entrelinhas:reading-lists", JSON.stringify(lists)); } catch {}
@@ -246,7 +174,6 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
         setSavedBooks([]);
         setAccountState("signed-out");
     }
-
     async function signInWithGoogle() {
         setAccountBusy(true);
         setAccountMessage("");
@@ -264,77 +191,10 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
             setAccountBusy(false);
         }
     }
-
-    const requiredCount = useMemo(() => books.filter((book) => bookMatchesTitle(book, requiredReading)).length, [books]);
-    const suggestedCount = useMemo(() => books.filter((book) => bookMatchesTitle(book, suggestedReading)).length, [books]);
-
-    async function loadCatalog(period = activePeriod, query = queryOverride) {
-        const queryForRequest = query;
-        const currentRequest = ++requestId.current;
-        const requestQuery = queryForRequest || (period === "todos"
-            ? 'subject:"Brazilian literature"'
-            : period === "obrigatorias"
-                ? titleQuery(requiredReading)
-                : period === "sugeridas"
-                    ? titleQuery(suggestedReading)
-                    : authorQuery(classicBrazilianLiterature[period] || []));
-
-        setLoading(true);
-        setError("");
-        try {
-            const params = new URLSearchParams({ q: requestQuery, limit: "100" });
-            const response = await fetch(`/api/books?${params}`);
-            const payload = await response.json();
-            if (!response.ok) throw new Error(payload.error || "catalog_unavailable");
-            if (currentRequest !== requestId.current) return;
-            setBooks(deduplicateBooks(payload.items.map((item) => ({
-                id: item.key || `${item.title}-${(item.author_name || []).join(",")}`,
-                title: item.title || "Título não informado",
-                authors: item.author_name || [],
-                authorKeys: item.author_key || [],
-                firstPublished: item.first_publish_year || null,
-                pageCount: item.number_of_pages_median || null,
-                editions: item.edition_count || 0,
-                subjects: item.subject || [],
-                coverUrl: item.cover_i ? `https://covers.openlibrary.org/b/id/${item.cover_i}-M.jpg` : null,
-                infoUrl: item.key ? `https://openlibrary.org${item.key}` : null,
-            }))));
-            setQueryOverride(queryForRequest);
-        } catch (loadError) {
-            if (currentRequest !== requestId.current) return;
-            console.error("Não foi possível carregar o catálogo:", loadError);
-            setError(loadError.message === "catalog_rate_limited"
-                ? "O catálogo está recebendo muitas consultas. Aguarde um pouco e tente de novo."
-                : "Não foi possível acessar o catálogo agora. Tente novamente em instantes.");
-        } finally {
-            if (currentRequest === requestId.current) setLoading(false);
-        }
-    }
-
-    function choosePeriod(period) {
-        setActivePeriod(period);
-        setReaderOnly(false);
-        setQueryOverride("");
-        setSearch("");
-        setView("discover");
-        loadCatalog(period, "");
-    }
-
     function submitSearch(event) {
         event.preventDefault();
-        const term = search.trim();
-        if (readerOnly) {
-            setQueryOverride(term);
-            setView("discover");
-            return;
-        }
-        setReaderOnly(false);
-        setQueryOverride(term);
         setView("discover");
-        if (term) loadCatalog(activePeriod, term);
-        else loadCatalog(activePeriod, "");
     }
-
     function toggleSaved(book) {
         const current = lists.find((list) => list.id === activeList) || lists[0];
         const nextBooks = current.books.some((item) => item.id === book.id)
@@ -342,7 +202,6 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
             : [book, ...current.books];
         void saveLists(lists.map((list) => list.id === current.id ? { ...list, books: nextBooks } : list));
     }
-
     function createList() {
         const name = window.prompt("Nome da nova lista:")?.trim();
         if (!name) return;
@@ -350,14 +209,12 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
         setActiveList(list.id);
         void saveLists([...lists, list]);
     }
-
     const selectedList = lists.find((list) => list.id === activeList) || lists[0];
-    const selectedBooks = view === "saved" ? savedBooks : readerOnly ? readerBookCards : books;
+    const selectedBooks = view === "saved" ? savedBooks.filter((book) => readerBookCardById.has(book.id)) : books;
     const normalizedReaderSearch = search.trim().toLocaleLowerCase("pt-BR");
-    const visibleBooks = readerOnly && normalizedReaderSearch
+    const visibleBooks = view !== "saved" && normalizedReaderSearch
         ? selectedBooks.filter((book) => `${book.title} ${book.authors.join(" ")}`.toLocaleLowerCase("pt-BR").includes(normalizedReaderSearch))
         : selectedBooks;
-
     return (
         <main className="site-shell">
             <header className="topbar">
@@ -368,7 +225,7 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
                 <nav className="top-nav" aria-label="Navegação principal">
                     <button className={view === "discover" ? "nav-link active" : "nav-link"} onClick={() => setView("discover")}>Descobrir</button>
                 <button className={view === "saved" ? "nav-link active" : "nav-link"} onClick={() => setView("saved")}>
-                    Minhas listas <span className="nav-count">{savedBooks.length}</span>
+                    Minhas listas <span className="nav-count">{savedBooks.filter((book) => readerBookCardById.has(book.id)).length}</span>
                 </button>
             </nav>
             <div className="topbar-note"><Sparkles size={15} /> Feito para quem ama ler</div>
@@ -377,14 +234,13 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
                     : <button className="account-button" onClick={() => { setAccountMessage(""); setAccountDialog("signin"); }}>Entrar / criar conta</button>}
             </div>
             </header>
-
             <section className="hero" id="inicio">
                 <div className="hero-copy">
                     <span className="eyebrow"><span className="eyebrow-line" /> UM GUIA DE LEITURA BRASILEIRA</span>
                     <h1>Histórias que<br /><em>ficam com você.</em></h1>
                     <p>Encontre os clássicos, conheça os movimentos literários e monte uma lista de leitura do seu jeito.</p>
                     <button className="hero-action" onClick={() => document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" })}>
-                        Explorar livros <ArrowDownWideNarrow size={17} />
+                        Explorar livros
                     </button>
                 </div>
                 <div className="hero-art" aria-hidden="true">
@@ -395,67 +251,47 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
                 </div>
                 <div className="hero-index">01 <span /> 12</div>
             </section>
-
             <section className="stats-strip" aria-label="Estatísticas do catálogo">
                 <div className="stat-block"><span className="stat-value">{books.length}</span><span className="stat-label">livros nesta seleção</span></div>
-                <div className="stat-block"><span className="stat-value">{requiredCount}</span><span className="stat-label">leituras obrigatórias</span></div>
-                <div className="stat-block"><span className="stat-value">{suggestedCount}</span><span className="stat-label">sugestões para explorar</span></div>
+                <div className="stat-block"><span className="stat-value">{readerBooksByAuthor.size}</span><span className="stat-label">autores com texto integral</span></div>
                 <div className="stats-aside">Uma biblioteca para<br /><strong>ler sem pressa.</strong></div>
             </section>
-
             <section className="catalog-section" id="catalogo">
                 <div className="section-heading">
                     <div><span className="eyebrow">A BIBLIOTECA</span><h2>{view === "saved" ? "Suas listas de leitura" : "Encontre sua próxima história"}</h2></div>
                     {view === "saved" ? <button className="text-action" onClick={() => setView("discover")}>Voltar ao catálogo <ArrowUpRight size={15} /></button> : <span className="section-note">Clássicos brasileiros, em um só lugar</span>}
                 </div>
-
-                {view === "saved" && <div className="list-toolbar"><div className="list-tabs">{lists.map((list) => <button key={list.id} className={activeList === list.id ? "period-chip selected" : "period-chip"} onClick={() => setActiveList(list.id)}>{list.name} <span>{list.books.length}</span></button>)}</div><button className="secondary-button new-list-button" onClick={createList}>+ Nova lista</button>{accountState !== "signed-in" && <span className="list-sync-note">Entre para sincronizar suas listas no Turso.</span>}</div>}
-
+                {view === "saved" && <div className="list-toolbar"><div className="list-tabs">{lists.map((list) => <button key={list.id} className={activeList === list.id ? "period-chip selected" : "period-chip"} onClick={() => setActiveList(list.id)}>{list.name} <span>{list.books.filter((book) => readerBookCardById.has(book.id)).length}</span></button>)}</div><button className="secondary-button new-list-button" onClick={createList}>+ Nova lista</button>{accountState !== "signed-in" && <span className="list-sync-note">Entre para sincronizar suas listas no Turso.</span>}</div>}
                 {view === "discover" && <>
                     <form className="search-form" onSubmit={submitSearch}>
                         <Search size={19} className="search-icon" />
                         <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Busque por título ou autor..." aria-label="Buscar livros por título ou autor" />
-                        {search && <button className="clear-search" type="button" onClick={() => { setSearch(""); setQueryOverride(""); if (!readerOnly) { setReaderOnly(false); loadCatalog(activePeriod, ""); } }} aria-label="Limpar busca"><X size={17} /></button>}
+                        {search && <button className="clear-search" type="button" onClick={() => setSearch("")} aria-label="Limpar busca"><X size={17} /></button>}
                         <button className="search-submit" type="submit">Buscar</button>
                     </form>
-                    <div className="filter-heading"><span>Explore por período</span><span className="filter-hint">Escolha uma categoria</span></div>
-                    <div className="period-filters" role="group" aria-label="Filtrar por período literário">
-                        {periods.map((period) => <button key={period.id} className={period.id === activePeriod ? "period-chip selected" : "period-chip"} onClick={() => choosePeriod(period.id)}>{period.label}</button>)}
-                        <button className={readerOnly ? "period-chip reader-filter selected" : "period-chip reader-filter"} aria-pressed={readerOnly} onClick={() => { setReaderOnly((active) => !active); setSearch(""); setQueryOverride(""); }}>Texto integral <span>{readerBookCards.length}</span></button>
-                    </div>
+                    <div className="filter-heading"><span>Obras dispon?veis para leitura integral</span><span className="filter-hint">Sele??o brasileira ? Project Gutenberg</span></div>
                 </>}
-
                 <div className="results-heading">
-                    <h3>{view === "saved" ? "Guardados para depois" : search ? `Resultados para “${search}”` : periods.find((item) => item.id === activePeriod)?.label}</h3>
-                    <span>{loading ? "Buscando no catálogo…" : `${visibleBooks.length} ${visibleBooks.length === 1 ? "livro" : "livros"}`}</span>
+                    <h3>{view === "saved" ? "Guardados para depois" : search ? `Resultados para “${search}”` : "Textos integrais disponiveis"}</h3>
+                    <span>{`${visibleBooks.length} ${visibleBooks.length === 1 ? "livro" : "livros"}`}</span>
                 </div>
-
-                    {error && view === "discover" ? <div className="empty-state error-state"><div className="empty-icon"><BookOpen size={23} /></div><h3>O catálogo está temporariamente indisponível</h3><p>{error}</p><button className="primary-button" onClick={() => loadCatalog(activePeriod, queryOverride)}>Tentar novamente</button></div>
-                    : loading ? <div className="loading-state"><LoaderCircle className="loading-spin" size={24} /><span>Preparando sua estante...</span></div>
-                        : visibleBooks.length === 0 ? <div className="empty-state"><div className="empty-icon"><Bookmark size={23} /></div><h3>{view === "saved" ? "Sua lista começa com um livro." : "Não encontramos livros por aqui."}</h3><p>{view === "saved" ? accountState === "signed-in" ? "Salve os títulos e eles ficam disponíveis quando você voltar." : "Guarde os títulos nesta sessão ou entre para sincronizar entre dispositivos." : "Tente outro título ou escolha um período literário diferente."}</p>{view === "saved" && <button className="primary-button" onClick={() => setView("discover")}>Explorar catálogo</button>}</div>
-                            : <div className="book-grid">{visibleBooks.map((book) => {
-                                const saved = savedBooks.some((item) => item.id === book.id);
-                                const required = bookMatchesTitle(book, requiredReading);
-                                const suggested = bookMatchesTitle(book, suggestedReading);
-                                const movement = movementFor(book);
-                                const workId = book.id?.match(/(?:\/works\/)?(OL\d+W|PG\d+)$/)?.[1];
-                                const hasReader = Boolean(workId && readerBooks[workId]);
-                                return <article className="book-card" key={book.id}>
-                                    <Link className="cover-button" href={bookHref(book)} aria-label={`Ver detalhes de ${book.title}`}>
-                                        <div className="cover-frame"><BookCover book={book} />{(required || suggested || hasReader) && <span className="book-badges">{hasReader && <span className="book-badge reader-available">Texto integral</span>}{(required || suggested) && <span className={required ? "book-badge required" : "book-badge suggested"}>{required ? "Obrigatória" : "Sugestão"}</span>}</span>}</div>
-                                    </Link>
-                                    <div className="book-info">
-                                        <div className="book-meta">{movement || "Literatura brasileira"}{book.firstPublished ? ` · ${book.firstPublished}` : ""}</div>
-                                        <Link className="book-title-link" href={bookHref(book)}>{book.title}</Link>
-                                        <p className="book-author">{authorHref(book) ? <Link className="book-author-link" href={authorHref(book)}>{book.authors.slice(0, 2).join(", ")}</Link> : book.authors.slice(0, 2).join(", ") || "Autoria n\u00e3o informada"}</p>
-                                        <div className="book-card-bottom"><span>{book.pageCount ? `${book.pageCount} páginas` : `${book.editions} edições`}</span><button className={saved ? "save-button saved" : "save-button"} onClick={() => toggleSaved(book)} aria-label={saved ? `Remover ${book.title} da lista` : `Salvar ${book.title}`} aria-pressed={saved}>{saved ? <Heart size={17} fill="currentColor" /> : <Bookmark size={17} />}</button></div>
-                                    </div>
-                                </article>;
-                            })}</div>}
+                {visibleBooks.length === 0 ? <div className="empty-state"><div className="empty-icon"><Bookmark size={23} /></div><h3>{view === "saved" ? "Sua lista comeca com um livro." : "Nao encontramos livros por aqui."}</h3><p>{view === "saved" ? "Salve os titulos com texto integral para encontra-los aqui." : "Tente outro titulo ou autor."}</p>{view === "saved" && <button className="primary-button" onClick={() => setView("discover")}>Explorar catalogo</button>}</div>
+                    : <div className="book-grid">{visibleBooks.map((book) => {
+                        const saved = savedBooks.some((item) => item.id === book.id);
+                        return <article className="book-card" key={book.id}>
+                            <Link className="cover-button" href={bookHref(book)} aria-label={`Ver detalhes de ${book.title}`}>
+                                <div className="cover-frame"><BookCover book={book} /><span className="book-badges"><span className="book-badge reader-available">Texto integral</span></span></div>
+                            </Link>
+                            <div className="book-info">
+                                <div className="book-meta">Literatura brasileira{book.firstPublished ? ` · ${book.firstPublished}` : ""}</div>
+                                <Link className="book-title-link" href={bookHref(book)}>{book.title}</Link>
+                                <p className="book-author"><Link className="book-author-link" href={authorHref(book)}>{book.authors[0]}</Link></p>
+                                <div className="book-card-bottom"><span>Texto integral</span><button className={saved ? "save-button saved" : "save-button"} onClick={() => toggleSaved(book)} aria-label={saved ? `Remover ${book.title} da lista` : `Salvar ${book.title}`} aria-pressed={saved}>{saved ? <Heart size={17} fill="currentColor" /> : <Bookmark size={17} />}</button></div>
+                            </div>
+                        </article>;
+                    })}</div>}
             </section>
-
-            <footer className="site-footer"><a className="brand footer-brand" href="#inicio"><span className="brand-mark"><BookOpen size={18} /></span><span>entrelinhas<span className="brand-period">.</span></span></a><span>Literatura brasileira, para ler e guardar.</span><a href="https://openlibrary.org" target="_blank" rel="noreferrer">Dados do Open Library <ArrowUpRight size={14} /></a></footer>
-
+            <footer className="site-footer"><a className="brand footer-brand" href="#inicio"><span className="brand-mark"><BookOpen size={18} /></span><span>entrelinhas<span className="brand-period">.</span></span></a><span>Literatura brasileira, para ler e guardar.</span><a href="https://www.gutenberg.org/ebooks/" target="_blank" rel="noreferrer">Textos integrais do Project Gutenberg <ArrowUpRight size={14} /></a></footer>
             {accountDialog && <div className="modal-backdrop" onClick={() => setAccountDialog("")} role="presentation"><section className="account-modal" role="dialog" aria-modal="true" aria-labelledby="account-title" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setAccountDialog("")} aria-label="Fechar"><X size={20} /></button><span className="eyebrow">SUAS LEITURAS EM QUALQUER LUGAR</span><h2 id="account-title">{accountDialog === "signup" ? "Crie sua conta" : "Bem-vindo de volta"}</h2><p>Suas listas ficam salvas com segurança e sincronizadas entre dispositivos.</p><form className="account-form" onSubmit={submitAccount}>{accountDialog === "signup" && <label>Nome<input name="name" autoComplete="name" required maxLength={120} /></label>}<label>E-mail<input name="email" type="email" autoComplete="email" required /></label><label>Senha<input name="password" type="password" autoComplete={accountDialog === "signup" ? "new-password" : "current-password"} minLength={8} required /></label>{accountMessage && <p className="account-error" role="alert">{accountMessage}</p>}<button className="primary-button" disabled={accountBusy}>{accountBusy ? "Aguarde..." : accountDialog === "signup" ? "Criar conta" : "Entrar"}</button></form>{googleEnabled && <><div className="auth-divider">ou</div><button className="secondary-button google-button" disabled={accountBusy} onClick={signInWithGoogle}>Continuar com Google</button></>}{accountDialog === "signin" ? <button className="auth-switch" onClick={() => { setAccountMessage(""); setAccountDialog("signup"); }}>Ainda não tem conta? Criar agora</button> : <button className="auth-switch" onClick={() => { setAccountMessage(""); setAccountDialog("signin"); }}>Já tem uma conta? Entrar</button>}</section></div>}
         </main>
     );
