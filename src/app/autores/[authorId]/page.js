@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowUpRight, BookOpen } from "lucide-react";
 import BookCover from "@/components/book-cover";
 import { getOpenLibraryJson, searchAuthorProfile } from "@/lib/books";
 import { readerBooks } from "@/lib/reader-catalog";
-import { getEditorialProfile } from "@/lib/editorial-data";
+import { getEditorialCovers, getEditorialProfile } from "@/lib/editorial-data";
 
 function slugify(value = "") {
     return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -33,8 +33,10 @@ async function loadAuthor(authorId) {
     }
     const name = editorial?.title || author?.name || "";
     const works = Object.values(readerBooks).filter((book) => slugify(book.author) === slug);
+    const covers = await getEditorialCovers(works.map((book) => book.workId));
+    const worksWithCovers = works.map((book) => ({ ...book, coverUrl: covers[book.workId] || book.coverUrl || null }));
     if (!name && !works.length) return null;
-    return { author: { ...author, name }, editorial, works };
+    return { author: { ...author, name }, editorial, works: worksWithCovers };
 }
 
 export async function generateMetadata({ params }) {
@@ -69,7 +71,7 @@ export default async function AuthorPage({ params }) {
             </div>
         </section>
         <section className="related-section author-works-section"><div className="section-heading"><div><span className="eyebrow">OBRAS COM TEXTO INTEGRAL</span><h2>Leia obras de {author.name}</h2></div><span className="section-note">{works.length} {works.length === 1 ? "obra" : "obras"} disponíveis</span></div>
-            {works.length ? <div className="related-grid">{works.map((work) => <Link className="related-card" href={`/livros/${work.workId}`} key={work.workId}><BookCover src={null} title={work.title} className="related-cover" /><span className="book-badge reader-available">Texto integral</span><span className="related-title">{work.title}</span><span className="related-year">{work.year || "Domínio público"}</span></Link>)}</div> : <p>Ainda não há textos integrais deste autor no acervo.</p>}
+            {works.length ? <div className="related-grid">{works.map((work) => <Link className="related-card" href={`/livros/${work.workId}`} key={work.workId}><BookCover src={work.coverUrl} title={work.title} className="related-cover" /><span className="book-badge reader-available">Texto integral</span><span className="related-title">{work.title}</span><span className="related-year">{work.year || "Domínio público"}</span></Link>)}</div> : <p>Ainda não há textos integrais deste autor no acervo.</p>}
         </section>
         <footer className="detail-footer">Perfil editorial em português escrito pelo Entrelinhas. Os dados bibliográficos podem ser complementados pela <a href="https://openlibrary.org" target="_blank" rel="noreferrer">Open Library</a>; as referências específicas estão indicadas acima.</footer>
     </main>;

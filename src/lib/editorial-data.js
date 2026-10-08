@@ -32,3 +32,19 @@ export const getEditorialProfile = cache(async (entityType, entityId) => {
         return fallback;
     }
 });
+
+export const getEditorialCovers = cache(async (entityIds) => {
+    const ids = [...new Set(entityIds.filter(Boolean))];
+    if (!ids.length) return {};
+    try {
+        const placeholders = ids.map(() => "?").join(", ");
+        const result = await getDb().execute({
+            sql: `SELECT entity_id, cover_url FROM editorial_profiles WHERE entity_type = 'work' AND cover_url IS NOT NULL AND entity_id IN (${placeholders})`,
+            args: ids,
+        });
+        return Object.fromEntries(result.rows.map((row) => [row.entity_id, row.cover_url]));
+    } catch (error) {
+        if (process.env.NODE_ENV !== "production") console.warn("Editorial covers unavailable; using catalog covers.", error.message);
+        return {};
+    }
+});
