@@ -1,7 +1,7 @@
 export function parseEbook(raw, allowRomanHeadings = false) {
     const lines = raw.replace(/^\uFEFF/, "").replace(/\r/g, "").split("\n");
-    const start = lines.findIndex((line) => line.includes("*** START OF THE PROJECT GUTENBERG EBOOK"));
-    const end = lines.findIndex((line, index) => index > start && line.includes("*** END OF THE PROJECT GUTENBERG EBOOK"));
+    const start = lines.findIndex((line) => /\*\*\*\s*START OF (?:THE|THIS) PROJECT GUTENBERG EBOOK/i.test(line));
+    const end = lines.findIndex((line, index) => index > start && /\*\*\*\s*END OF (?:THE|THIS) PROJECT GUTENBERG EBOOK/i.test(line));
     if (start < 0 || end < 0) throw new Error("Arquivo incompleto");
 
     const sections = [];
@@ -32,5 +32,21 @@ export function parseEbook(raw, allowRomanHeadings = false) {
         } else if (started) paragraph.push(line);
     }
     flushSection();
+    if (!started) {
+        const paragraphs = [];
+        let fallbackParagraph = [];
+        const flushFallbackParagraph = () => {
+            const text = fallbackParagraph.join(" ").replace(/\s+/g, " ").trim();
+            if (text) paragraphs.push(text);
+            fallbackParagraph = [];
+        };
+        for (const rawLine of lines.slice(start + 1, end)) {
+            const line = rawLine.trim();
+            if (line) fallbackParagraph.push(line);
+            else flushFallbackParagraph();
+        }
+        flushFallbackParagraph();
+        if (paragraphs.length) return [{ heading: "", paragraphs }];
+    }
     return sections;
 }

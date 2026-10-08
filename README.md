@@ -30,3 +30,10 @@ O login por e-mail e senha já está habilitado. Google é opcional e requer `GO
 - `/api/books` é o proxy do servidor para Open Library e usa cache de função/CDN.
 - Better Auth gerencia sessões; Turso (libSQL) guarda usuários e listas privadas.
 - Cloudflare pode continuar como DNS/analytics. Não é necessário colocar Worker adicional no caminho de cada busca.
+
+
+## Textos integrais e cat?logo do Gutenberg
+
+Os textos integrais s?o mantidos como arquivos TXT em `public/texts`, com preserva??o da transcri??o e dos marcadores/cr?ditos da edi??o digital de origem. O cat?logo `src/lib/reader-catalog.js` relaciona cada texto ? obra, autoria, ano de morte, eBook e p?gina da fonte. Para adicionar entradas j? registradas no cat?logo ao acervo local, execute `node scripts/sync-gutenberg-texts.mjs`; o script baixa apenas arquivos ausentes e valida os marcadores do Gutenberg.
+
+A sele??o brasileira ? editorial e incremental: o Project Gutenberg n?o mant?m um campo confi?vel de nacionalidade dos autores. Cada inclus?o deve confirmar autoria brasileira, idioma/escopo da obra, elegibilidade em dom?nio p?blico no Brasil e a origem do texto. A declara??o de dom?nio p?blico dos EUA do Gutenberg, isoladamente, n?o comprova o status jur?dico no Brasil.

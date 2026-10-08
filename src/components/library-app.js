@@ -29,7 +29,7 @@ const readerBookCards = Object.values(readerBooks).map((book) => ({
     editions: 0,
     subjects: [],
     coverUrl: null,
-    infoUrl: `https://openlibrary.org/works/${book.workId}`,
+    infoUrl: book.sourceUrl,
 }));
 
 const movementNames = {
@@ -75,7 +75,7 @@ function bookMatchesTitle(book, list) {
 }
 
 function bookHref(book) {
-    const match = book.id?.match(/(?:\/works\/)?(OL\d+W)$/);
+    const match = book.id?.match(/(?:\/works\/)?(OL\d+W|PG\d+)$/);
     return match ? `/livros/${match[1]}` : book.infoUrl || "#";
 }
 
@@ -323,6 +323,11 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
     function submitSearch(event) {
         event.preventDefault();
         const term = search.trim();
+        if (readerOnly) {
+            setQueryOverride(term);
+            setView("discover");
+            return;
+        }
         setReaderOnly(false);
         setQueryOverride(term);
         setView("discover");
@@ -347,7 +352,11 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
     }
 
     const selectedList = lists.find((list) => list.id === activeList) || lists[0];
-    const visibleBooks = view === "saved" ? savedBooks : readerOnly ? readerBookCards : books;
+    const selectedBooks = view === "saved" ? savedBooks : readerOnly ? readerBookCards : books;
+    const normalizedReaderSearch = search.trim().toLocaleLowerCase("pt-BR");
+    const visibleBooks = readerOnly && normalizedReaderSearch
+        ? selectedBooks.filter((book) => `${book.title} ${book.authors.join(" ")}`.toLocaleLowerCase("pt-BR").includes(normalizedReaderSearch))
+        : selectedBooks;
 
     return (
         <main className="site-shell">
@@ -406,13 +415,13 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
                     <form className="search-form" onSubmit={submitSearch}>
                         <Search size={19} className="search-icon" />
                         <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Busque por título ou autor..." aria-label="Buscar livros por título ou autor" />
-                        {search && <button className="clear-search" type="button" onClick={() => { setSearch(""); setQueryOverride(""); setReaderOnly(false); loadCatalog(activePeriod, ""); }} aria-label="Limpar busca"><X size={17} /></button>}
+                        {search && <button className="clear-search" type="button" onClick={() => { setSearch(""); setQueryOverride(""); if (!readerOnly) { setReaderOnly(false); loadCatalog(activePeriod, ""); } }} aria-label="Limpar busca"><X size={17} /></button>}
                         <button className="search-submit" type="submit">Buscar</button>
                     </form>
                     <div className="filter-heading"><span>Explore por período</span><span className="filter-hint">Escolha uma categoria</span></div>
                     <div className="period-filters" role="group" aria-label="Filtrar por período literário">
                         {periods.map((period) => <button key={period.id} className={period.id === activePeriod ? "period-chip selected" : "period-chip"} onClick={() => choosePeriod(period.id)}>{period.label}</button>)}
-                        <button className={readerOnly ? "period-chip reader-filter selected" : "period-chip reader-filter"} aria-pressed={readerOnly} onClick={() => setReaderOnly((active) => !active)}>Texto integral <span>{readerBookCards.length}</span></button>
+                        <button className={readerOnly ? "period-chip reader-filter selected" : "period-chip reader-filter"} aria-pressed={readerOnly} onClick={() => { setReaderOnly((active) => !active); setSearch(""); setQueryOverride(""); }}>Texto integral <span>{readerBookCards.length}</span></button>
                     </div>
                 </>}
 
@@ -429,7 +438,7 @@ export default function LibraryApp({ initialBooks, googleEnabled = false }) {
                                 const required = bookMatchesTitle(book, requiredReading);
                                 const suggested = bookMatchesTitle(book, suggestedReading);
                                 const movement = movementFor(book);
-                                const workId = book.id?.match(/(?:\/works\/)?(OL\d+W)$/)?.[1];
+                                const workId = book.id?.match(/(?:\/works\/)?(OL\d+W|PG\d+)$/)?.[1];
                                 const hasReader = Boolean(workId && readerBooks[workId]);
                                 return <article className="book-card" key={book.id}>
                                     <Link className="cover-button" href={bookHref(book)} aria-label={`Ver detalhes de ${book.title}`}>
