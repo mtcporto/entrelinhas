@@ -18,8 +18,15 @@ const authorSlugAliases = {
 const authorPortraits = {
     "machado-de-assis": {
         src: "https://entrelinhas-assets.mosaicoworkers.workers.dev/authors/machado-de-assis-v1.webp",
+        caption: "Retrato aos 57 anos, c. 1896",
         source: "Fundação Biblioteca Nacional · Wikimedia Commons",
         sourceUrl: "https://commons.wikimedia.org/wiki/File:Machado_de_Assis_aos_57_anos_(cropped).jpg",
+    },
+    "jose-de-alencar": {
+        src: "https://entrelinhas-assets.mosaicoworkers.workers.dev/authors/jose-de-alencar-v1.webp",
+        caption: "Retrato, c. 1870",
+        source: "Alberto Henschel · Wikimedia Commons",
+        sourceUrl: "https://commons.wikimedia.org/wiki/File:Jose_de_Alencar.jpg",
     },
 };
 
@@ -73,7 +80,7 @@ export default async function AuthorPage({ params }) {
         <section className="author-hero">
             <figure className="author-portrait-block">
                 {image ? <BookCover src={image} title={author.name} alt={`Retrato de ${author.name}`} className="author-portrait" loading="eager" /> : <div className="author-portrait author-portrait-placeholder"><BookOpen size={34} /><span>PERFIL DE AUTOR</span></div>}
-                {portrait && <figcaption className="author-portrait-credit">Retrato aos 57 anos, c. 1896 · <a href={portrait.sourceUrl} target="_blank" rel="noreferrer">{portrait.source} <ArrowUpRight size={12} /></a></figcaption>}
+                {portrait && <figcaption className="author-portrait-credit">{portrait.caption} · <a href={portrait.sourceUrl} target="_blank" rel="noreferrer">{portrait.source} <ArrowUpRight size={12} /></a></figcaption>}
             </figure>
             <div className="work-copy"><span className="eyebrow">AUTOR</span><h1>{author.name}</h1>
                 {(author.birth_date || author.death_date) && <p className="author-dates">{author.birth_date || "Data de nascimento não informada"}{author.death_date ? ` — ${author.death_date}` : ""}</p>}
