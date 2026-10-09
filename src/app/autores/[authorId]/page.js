@@ -61,7 +61,7 @@ export default async function AuthorPage({ params }) {
         <header className="detail-topbar"><Link className="detail-back" href="/"><ArrowLeft size={16} /> Voltar ao catálogo</Link><Link className="brand" href="/"><span className="brand-mark"><BookOpen size={20} /></span><span>entrelinhas<span className="brand-period">.</span></span></Link></header>
         <section className="author-hero">
             <figure className="author-portrait-block">
-                {image ? <BookCover src={image} title={author.name} alt={`Retrato de ${author.name}`} className="author-portrait" loading="eager" /> : <div className="author-portrait author-portrait-placeholder"><BookOpen size={34} /><span>PERFIL DE AUTOR</span></div>}
+                {image ? <BookCover src={image} title={author.name} alt={`Retrato de ${author.name}`} className={`author-portrait author-portrait--${slugify(author.name)}`} loading="eager" /> : <div className="author-portrait author-portrait-placeholder"><BookOpen size={34} /><span>PERFIL DE AUTOR</span></div>}
                 {portraitCredit && <figcaption className="author-portrait-credit">Retrato · <a href={portraitCredit.url} target="_blank" rel="noreferrer">{portraitCredit.label.slice("Retrato ·".length).trim()} <ArrowUpRight size={12} /></a></figcaption>}
             </figure>
             <div className="work-copy"><span className="eyebrow">AUTOR</span><h1>{author.name}</h1>
