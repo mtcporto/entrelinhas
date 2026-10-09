@@ -1,4 +1,4 @@
-const COVER_KEY_PATTERN = /^covers\/[a-z0-9-]+\.webp$/;
+const ASSET_KEY_PATTERN = /^(?:covers|authors)\/[a-z0-9-]+\.webp$/;
 
 export default {
     async fetch(request, env) {
@@ -10,7 +10,7 @@ export default {
         }
 
         const key = new URL(request.url).pathname.slice(1);
-        if (!COVER_KEY_PATTERN.test(key)) return new Response("Not Found", { status: 404 });
+        if (!ASSET_KEY_PATTERN.test(key)) return new Response("Not Found", { status: 404 });
 
         const object = await env.COVERS.get(key);
         if (!object) return new Response("Not Found", { status: 404 });

@@ -15,6 +15,14 @@ const authorSlugAliases = {
     "azevedo-aluisio": "aluisio-azevedo",
 };
 
+const authorPortraits = {
+    "machado-de-assis": {
+        src: "https://entrelinhas-assets.mosaicoworkers.workers.dev/authors/machado-de-assis-v1.webp",
+        source: "Fundação Biblioteca Nacional · Wikimedia Commons",
+        sourceUrl: "https://commons.wikimedia.org/wiki/File:Machado_de_Assis_aos_57_anos_(cropped).jpg",
+    },
+};
+
 async function loadAuthor(authorId) {
     let author = null;
     let slug = authorId;
@@ -55,14 +63,18 @@ export default async function AuthorPage({ params }) {
     if (!data) notFound();
 
     const { author, editorial, works } = data;
+    const portrait = authorPortraits[slugify(author.name)];
     const photo = author.photos?.find((id) => id > 0);
-    const image = photo ? `https://covers.openlibrary.org/a/id/${photo}-L.jpg` : null;
+    const image = portrait?.src || (photo ? `https://covers.openlibrary.org/a/id/${photo}-L.jpg` : null);
     const sources = editorial?.sources || [];
 
     return <main className="detail-shell">
         <header className="detail-topbar"><Link className="detail-back" href="/"><ArrowLeft size={16} /> Voltar ao catálogo</Link><Link className="brand" href="/"><span className="brand-mark"><BookOpen size={20} /></span><span>entrelinhas<span className="brand-period">.</span></span></Link></header>
         <section className="author-hero">
-            {image ? <BookCover src={image} title={author.name} className="author-portrait" loading="eager" /> : <div className="author-portrait author-portrait-placeholder"><BookOpen size={34} /><span>PERFIL DE AUTOR</span></div>}
+            <figure className="author-portrait-block">
+                {image ? <BookCover src={image} title={author.name} alt={`Retrato de ${author.name}`} className="author-portrait" loading="eager" /> : <div className="author-portrait author-portrait-placeholder"><BookOpen size={34} /><span>PERFIL DE AUTOR</span></div>}
+                {portrait && <figcaption className="author-portrait-credit">Retrato aos 57 anos, c. 1896 · <a href={portrait.sourceUrl} target="_blank" rel="noreferrer">{portrait.source} <ArrowUpRight size={12} /></a></figcaption>}
+            </figure>
             <div className="work-copy"><span className="eyebrow">AUTOR</span><h1>{author.name}</h1>
                 {(author.birth_date || author.death_date) && <p className="author-dates">{author.birth_date || "Data de nascimento não informada"}{author.death_date ? ` — ${author.death_date}` : ""}</p>}
                 {editorial?.summary && <><h2 className="author-section-title">Trajetória</h2><p className="author-bio">{editorial.summary}</p></>}

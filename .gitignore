@@ -6,6 +6,10 @@ node_modules/
 !.env.example
 npm-debug.log*
 
+# Image files are served from the Entrelinhas R2 bucket, not Vercel static assets.
+/public/covers/
+/public/authors/
+
 .env.example
 
 .env.local
