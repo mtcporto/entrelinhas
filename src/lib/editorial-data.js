@@ -12,16 +12,16 @@ function parseJson(value, fallback) {
 export const getEditorialProfile = cache(async (entityType, entityId) => {
     const fallback = seedById.get(`${entityType}:${entityId}`) || null;
     try {
-        const result = await getDb().execute({
+        const db = getDb();
+        const [result, sources] = await Promise.all([db.execute({
             sql: "SELECT title, summary, editorial, themes_json, cover_url FROM editorial_profiles WHERE entity_type = ? AND entity_id = ? LIMIT 1",
             args: [entityType, entityId],
-        });
-        const row = result.rows[0];
-        if (!row) return fallback;
-        const sources = await getDb().execute({
+        }), db.execute({
             sql: "SELECT label, url FROM editorial_sources WHERE entity_type = ? AND entity_id = ? ORDER BY sort_order, label",
             args: [entityType, entityId],
-        });
+        })]);
+        const row = result.rows[0];
+        if (!row) return fallback;
         return {
             entityType, entityId, title: row.title, summary: row.summary,
             editorial: row.editorial, themes: parseJson(row.themes_json, []), coverUrl: row.cover_url || null,

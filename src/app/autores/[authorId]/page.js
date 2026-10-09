@@ -27,13 +27,13 @@ async function loadAuthor(authorId) {
         }
     }
     const editorial = await getEditorialProfile("author", slug);
-    if (!author && editorial) {
-        try { author = await searchAuthorProfile(editorial.title); }
-        catch { /* The editorial profile remains available without Open Library metadata. */ }
-    }
     const name = editorial?.title || author?.name || "";
     const works = Object.values(readerBooks).filter((book) => slugify(book.author) === slug);
-    const covers = await getEditorialCovers(works.map((book) => book.workId));
+    const [openLibraryProfile, covers] = await Promise.all([
+        !author && editorial ? searchAuthorProfile(editorial.title).catch(() => null) : Promise.resolve(null),
+        getEditorialCovers(works.map((book) => book.workId)),
+    ]);
+    author ||= openLibraryProfile;
     const worksWithCovers = works.map((book) => ({ ...book, coverUrl: covers[book.workId] || book.coverUrl || null }));
     if (!name && !works.length) return null;
     return { author: { ...author, name }, editorial, works: worksWithCovers };
