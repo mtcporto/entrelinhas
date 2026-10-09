@@ -70,6 +70,8 @@ function BookCover({ book, large = false }) {
 }
 export default function LibraryApp({ googleEnabled = false }) {
     const [books, setBooks] = useState(readerBookCards);
+    const [heroCovers, setHeroCovers] = useState([]);
+    const [heroSlide, setHeroSlide] = useState(1);
     const [savedBooks, setSavedBooks] = useState([]);
     const [view, setView] = useState("discover");
     const [search, setSearch] = useState("");
@@ -96,6 +98,24 @@ export default function LibraryApp({ googleEnabled = false }) {
             });
         return () => controller.abort();
     }, []);
+    useEffect(() => {
+        const available = books.filter((book) => book.coverUrl);
+        if (available.length < 2) return;
+        const shuffled = [...available].sort(() => Math.random() - 0.5);
+        const slideCount = Math.ceil(shuffled.length / 2);
+        let slide = 0;
+        const showSlide = (index) => {
+            const first = (index * 2) % shuffled.length;
+            setHeroCovers([shuffled[first], shuffled[(first + 1) % shuffled.length]]);
+            setHeroSlide(index + 1);
+        };
+        showSlide(slide);
+        const interval = window.setInterval(() => {
+            slide = (slide + 1) % slideCount;
+            showSlide(slide);
+        }, 8000);
+        return () => window.clearInterval(interval);
+    }, [books]);
     useEffect(() => {
         void loadAccount();
     }, []);
@@ -261,11 +281,12 @@ export default function LibraryApp({ googleEnabled = false }) {
                 </div>
                 <div className="hero-art" aria-hidden="true">
                     <div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" />
-                    <div className="book-stack stack-back"><span>POESIA</span><b>versos<br />do Brasil</b></div>
-                    <div className="book-stack stack-front"><span>ROMANCE</span><b>uma história<br />para guardar</b></div>
+                    {heroCovers.map((book, index) => <div className={`hero-book-cover stack-${index === 0 ? "back" : "front"}`} key={`${heroSlide}-${book.id}`}>
+                        <Image src={book.coverUrl} alt="" fill sizes="(max-width: 680px) 130px, 207px" unoptimized />
+                    </div>)}
                     <span className="art-sparkle sparkle-one">✳</span><span className="art-sparkle sparkle-two">✳</span>
                 </div>
-                <div className="hero-index">01 <span /> 12</div>
+                <div className="hero-index">{String(heroSlide).padStart(2, "0")} <span /> {String(Math.ceil(books.filter((book) => book.coverUrl).length / 2)).padStart(2, "0")}</div>
             </section>
             <section className="stats-strip" aria-label="Estatísticas do catálogo">
                 <div className="stat-block"><span className="stat-value">{books.length}</span><span className="stat-label">livros nesta seleção</span></div>

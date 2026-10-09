@@ -52,6 +52,10 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
     .list-tabs { width: 100%; }
     .account-modal { padding: 30px 23px; }
 }
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-book-cover { animation: none; }
+}
 a { color: inherit; text-decoration: none; }
 
 .site-shell { width: min(1280px, calc(100% - 72px)); margin: 0 auto; }
@@ -81,11 +85,11 @@ a { color: inherit; text-decoration: none; }
 .hero-orbit { position: absolute; top: 50%; left: 50%; border: 1px solid rgba(217, 229, 184, .17); border-radius: 50%; transform: translate(-50%, -50%) rotate(-26deg); }
 .orbit-one { width: 440px; height: 310px; }
 .orbit-two { width: 340px; height: 440px; }
-.book-stack { position: absolute; width: 207px; height: 280px; display: flex; flex-direction: column; justify-content: space-between; padding: 23px; box-shadow: 18px 24px 30px rgba(7, 23, 12, .32); font-family: Georgia, "Times New Roman", serif; }
-.book-stack span { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 9px; letter-spacing: .2em; }
-.book-stack b { font-size: 31px; font-weight: 500; line-height: 1.12; }
-.stack-back { top: 18%; right: 27%; transform: rotate(12deg); background: #bdc98d; color: #263d2e; }
-.stack-front { top: 26%; right: 5%; transform: rotate(-9deg); background: #c87853; color: #fff4e5; }
+.hero-book-cover { position: absolute; width: 207px; aspect-ratio: 2 / 3; overflow: hidden; background: #e8e3ce; box-shadow: 18px 24px 30px rgba(7, 23, 12, .32); animation: hero-cover-arrive .55s ease both; }
+.hero-book-cover img { object-fit: cover; }
+.stack-back { top: 13%; right: 30%; transform: rotate(12deg); }
+.stack-front { top: 25%; right: 5%; transform: rotate(-9deg); }
+@keyframes hero-cover-arrive { from { opacity: .35; translate: 0 8px; } to { opacity: 1; translate: 0 0; } }
 .art-sparkle { position: absolute; z-index: 1; color: #dce69e; }
 .sparkle-one { top: 18%; right: 12%; font-size: 24px; }
 .sparkle-two { bottom: 19%; left: 12%; font-size: 16px; }
