@@ -9,7 +9,8 @@
     "start": "next start",
     "seed:editorial": "node scripts/seed-editorial-content.mjs",
     "cover:set": "node scripts/set-cover-url.mjs",
-    "cover:list": "node scripts/list-cover-urls.mjs"
+    "cover:list": "node scripts/list-cover-urls.mjs",
+    "portrait:set": "node scripts/set-author-portrait.mjs"
   },
   "repository": {
     "type": "git",

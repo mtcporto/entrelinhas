@@ -27,7 +27,7 @@ for (const profile of editorialSeedProfiles) {
             editorial = excluded.editorial, themes_json = excluded.themes_json, updated_at = excluded.updated_at`,
         args: [profile.entityType, profile.entityId, profile.title, profile.summary, profile.editorial, JSON.stringify(profile.themes), now],
     });
-    statements.push({ sql: "DELETE FROM editorial_sources WHERE entity_type = ? AND entity_id = ?", args: [profile.entityType, profile.entityId] });
+    statements.push({ sql: "DELETE FROM editorial_sources WHERE entity_type = ? AND entity_id = ? AND label NOT LIKE 'Retrato ·%'", args: [profile.entityType, profile.entityId] });
     profile.sources.forEach((source, index) => statements.push({
         sql: "INSERT INTO editorial_sources (entity_type, entity_id, label, url, sort_order) VALUES (?, ?, ?, ?, ?)",
         args: [profile.entityType, profile.entityId, source.label, source.url, index],
