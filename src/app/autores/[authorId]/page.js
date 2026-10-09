@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, BookOpen } from "lucide-react";
 import BookCover from "@/components/book-cover";
-import { getOpenLibraryJson, searchAuthorProfile } from "@/lib/books";
+import { getOpenLibraryJson } from "@/lib/books";
 import { readerBooks } from "@/lib/reader-catalog";
 import { getEditorialCovers, getEditorialProfile } from "@/lib/editorial-data";
 
@@ -27,13 +27,10 @@ async function loadAuthor(authorId) {
         }
     }
     const editorial = await getEditorialProfile("author", slug);
+    if (!author && editorial) author = { name: editorial.title };
     const name = editorial?.title || author?.name || "";
     const works = Object.values(readerBooks).filter((book) => slugify(book.author) === slug);
-    const [openLibraryProfile, covers] = await Promise.all([
-        !author && editorial ? searchAuthorProfile(editorial.title).catch(() => null) : Promise.resolve(null),
-        getEditorialCovers(works.map((book) => book.workId)),
-    ]);
-    author ||= openLibraryProfile;
+    const covers = await getEditorialCovers(works.map((book) => book.workId));
     const worksWithCovers = works.map((book) => ({ ...book, coverUrl: covers[book.workId] || book.coverUrl || null }));
     if (!name && !works.length) return null;
     return { author: { ...author, name }, editorial, works: worksWithCovers };
