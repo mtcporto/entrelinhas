@@ -55,3 +55,8 @@ Para sincronizar o catálogo editorial com o Turso configurado em `.env.local`, 
 ## Imagens no R2
 
 Capas e retratos ficam no bucket `entrelinhas-images` e são servidos pelo Worker somente de leitura em `cloudflare/entrelinhas-assets`, nos prefixos `covers/` e `authors/`. As imagens de runtime não devem ser guardadas em `public/`, porque isso as publicaria também como assets estáticos no Vercel. Gere ou baixe cada WebP fora de `public/`, envie com `npx wrangler r2 object put entrelinhas-images/<prefixo>/<arquivo-com-versao>.webp --remote --file <arquivo-local.webp> --content-type image/webp --cache-control "public, max-age=31536000, immutable"` e use um nome versionado novo para cada atualização. Capas editoriais e retratos de autores usam a coluna `cover_url` de `editorial_profiles`; confira capas com `npm run cover:list`. A pagina de autor le a URL da imagem e o credito de `editorial_sources`, entao apos publicar essa integracao, trocar um retrato nao exige redeploy. Atualize um retrato no Turso com `npm run portrait:set -- <slug-do-autor> <url-webp-do-r2> <credito> <url-da-fonte>`.
+ 
+
+## Desenvolvimento
+
+Baseline: Node.js 24.x. Consulte o `package.json` para instalação, validação e build.
