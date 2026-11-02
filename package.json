@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/mtcporto/entrelinhas#readme",
   "dependencies": {
-    "@better-auth/drizzle-adapter": "^1.7.2",
+    "@better-auth/drizzle-adapter": "^1.7.7",
     "@libsql/client": "^0.18.0",
     "better-auth": "^1.7.7",
     "drizzle-orm": "^0.45.3",
